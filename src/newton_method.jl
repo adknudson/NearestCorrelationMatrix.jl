@@ -37,7 +37,7 @@ end
 
 
 
-function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:Union{Float32, Float64}}
+function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
     n, nc = size(R)
     n == nc || error("The input matrix must be square.")
         
