@@ -1,43 +1,45 @@
 """
-    cor_nearest_posdef(R::AbstractMatrix{<:T} [, τ::Real=1e-6]; tol::Real=1e-3) where T<:Union{Float32, Float64}
+    Newton
 
-Return the nearest positive definite correlation matrix to `R`. `τ` is a
-tuning parameter that controls the minimum eigenvalue of the resulting matrix.
-`τ` can be set to zero if only a positive semidefinite matrix is needed. `tol`
-is the accuracy in the relative gap. Set to a smaller value (e.g. `1e-8`) if
-higher accuracy is needed.
+`τ` is a tuning parameter that controls the minimum eigenvalue of the resulting matrix, and can be 
+set to zero if only a positive semidefinite matrix is needed.
 
-See also: [`cor_fast_posdef`](@ref), [`cor_fast_posdef!`](@ref)
-
-# Examples
-```jldoctest
-julia> import LinearAlgebra: isposdef
-
-julia> r = [1.00 0.82 0.56 0.44; 0.82 1.00 0.28 0.85; 0.56 0.28 1.00 0.22; 0.44 0.85 0.22 1.00]
-4×4 Matrix{Float64}:
- 1.0   0.82  0.56  0.44
- 0.82  1.0   0.28  0.85
- 0.56  0.28  1.0   0.22
- 0.44  0.85  0.22  1.0
-
-julia> isposdef(r)
-false
-
-julia> p = cor_nearest_posdef(r)
-4×4 Matrix{Float64}:
- 1.0       0.817095  0.559306  0.440514
- 0.817095  1.0       0.280196  0.847352
- 0.559306  0.280196  1.0       0.219582
- 0.440514  0.847352  0.219582  1.0
-
-julia> isposdef(p)
-true
-```
+# Parameters
+- `τ`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
+- `tol`: the tolerance used as a stopping condition during iterations
+- `tol_cg`: the tolerance used in the conjugate gradient method
+- `tol_ls`: the tolerance used in the line search method
+- `iter_outer`: the max number of Newton steps
+- `iter_inner`: the max number of refinements during the Newton step
+- `iter_cg`: the max number of iterations in the conjugate gradient method
 """
-function cor_nearest_posdef(R::AbstractMatrix{T}, τ::Real=1e-6; tol::Real=1e-3) where {T<:Union{Float32, Float64}}
-    nr, nc = size(R)
-    nr == nc || error("The input matrix must be square.")
-    n = nr
+struct Newton <: NearestCorrelationAlgorithm
+    τ::Float64
+    tol::Float64
+    tol_cg::Float64
+    tol_ls::Float64
+    iter_outer::Int
+    iter_inner::Int
+    iter_cg::Int
+
+    function Newton(; τ=1e-6, tol=1e-3, tol_cg=1e-2, tol_ls=1e-4, iter_outer=200, iter_inner=20, iter_cg=200)
+        return new(
+            max(zero(Float64), float(τ)),
+            max(eps(Float64), float(tol)),
+            tol_cg,
+            tol_ls,
+            iter_outer,
+            iter_inner,
+            iter_cg,
+        )
+    end
+end
+
+
+
+function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:Union{Float32, Float64}}
+    n, nc = size(R)
+    n == nc || error("The input matrix must be square.")
         
     if !issymmetric(R)
         @warn "The input matrix is not symmetric. Using the upper triangle to create a symmetric view."
@@ -45,21 +47,20 @@ function cor_nearest_posdef(R::AbstractMatrix{T}, τ::Real=1e-6; tol::Real=1e-3)
     end
 
     if !_diagonals_are_one(R)
-        @warn "The diagonal elements are not all equal to 1. Explicitly setting the values to one."
+        @warn "The diagonal elements are not all equal to 1. Explicitly setting the values to 1."
         R[diagind(R)] .= one(T)
     end
-
     
     # Setup 
     onehalf    = T(0.5)
-    iter_outer = 200
-    iter_inner = 20
-    iter_cg    = 200
-    tol_cg     = T(1e-2)
-    tol_ls     = T(1e-4)
+    τ          = T(alg.τ)
+    iter_outer = alg.iter_outer
+    iter_inner = alg.iter_inner
+    iter_cg    = alg.iter_cg
+    tol_cg     = T(alg.tol_cg)
+    tol_ls     = T(alg.tol_ls)
+    err_tol    = T(alg.tol)
     inner_eps  = T(1e-6)
-    err_tol    = max(eps(T), T(tol))
-    τ          = max(zero(τ), T(τ))
 
     b = ones(T, n)
     if τ > zero(T)
@@ -79,7 +80,6 @@ function cor_nearest_posdef(R::AbstractMatrix{T}, τ::Real=1e-6; tol::Real=1e-3)
     f      = f₀      # [1]
     b     .= b₀ - Fy # [n,1]
 
-    
     _pca!(X, b₀, λ, P) # [n,n]
     
     val_R    = onehalf * norm(R)^2
@@ -136,18 +136,15 @@ function cor_nearest_posdef(R::AbstractMatrix{T}, τ::Real=1e-6; tol::Real=1e-3)
 
     X[diagind(X)] .+= τ
     _cov2cor!(X)
-    return X
-end
-
-function cor_nearest_posdef(R::AbstractMatrix{Float16}, τ::Real=1e-6; tol::Real=1e-3)
-    @warn "Float16s are converted to Float32s before computing the nearest correlation" maxlog=1
-    Q = cor_nearest_posdef(Float32.(R), τ; tol=tol)
-    return Float16.(Q)
+    R .= X
+    return R
 end
 
 
 
 """
+    _gradient(y::Vector{T}, λ₀::Vector{T}, P::Matrix{T}, b₀::Vector{T}) where {T<:AbstractFloat}
+
 Return f(yₖ) and ∇f(yₖ) where
 
 ```math
@@ -177,7 +174,7 @@ end
 
 
 """
-
+    _pca!(X::Matrix{T}, b::Vector{T}, λ::Vector{T}, P::Matrix{T}) where {T<:AbstractFloat}
 """
 function _pca!(X::Matrix{T}, b::Vector{T}, λ::Vector{T}, P::Matrix{T}) where {T<:AbstractFloat}
     n = length(b)
@@ -214,6 +211,8 @@ end
 
 
 """
+    _pre_conjugate_gradient!(p::Vector{T}, b::Vector{T}, c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, tol::Real, num_iter::Int) where {T<:AbstractFloat}
+
 Preconditioned conjugate gradient method to solve Vₖdₖ = -∇f(yₖ)
 """
 function _pre_conjugate_gradient!(p::Vector{T}, b::Vector{T}, c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, tol::Real, num_iter::Int) where {T<:AbstractFloat}
@@ -255,6 +254,8 @@ end
 
 
 """
+    _precondition_matrix!(c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}) where {T<:AbstractFloat}
+
 Create the preconditioner matrix used in solving the linear system `Vₖdₖ = -∇f(yₖ)` in the conjugate gradient method. Stores the result in `c`
 """
 function _precondition_matrix!(c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}) where {T<:AbstractFloat}
@@ -283,7 +284,10 @@ function _precondition_matrix!(c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}) whe
 end
 
 
+
 """
+    _create_omega_matrix(λ::Vector{T}) where {T<:AbstractFloat}
+
 The Omega matrix is used in creating the preconditioner matrix.
 """
 function _create_omega_matrix(λ::Vector{T}) where {T<:AbstractFloat}
@@ -307,6 +311,8 @@ end
 
 
 """
+    _jacobian!(w::Vector{T}, x::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, n::Int) where {T<:AbstractFloat}
+
 Create the Generalized Jacobian matrix for the Newton direction step, and store in `w`
 """
 function _jacobian!(w::Vector{T}, x::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, n::Int) where {T<:AbstractFloat}
