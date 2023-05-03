@@ -7,27 +7,24 @@ This is a light-weight pure-julia library for computing the nearest correlation 
 ```julia
 using NearestCorrelationMatrix
 
-# compute the nearest correlation matrix
+# compute the nearest correlation matrix with default settings
 x = rand(10, 10)
-R = cor_nearest_posdef(x)
+Q = nearest_cor(x)
 
 # compute the nearest positive semidefinite correlation matrix
 y = rand(10, 10)
-S = cor_nearest_posdef(x, 0)
+R = nearest_cor(x, Newton(τ=0.0))
 
-# compute a close (not nearest) correlation matrix
-z = rand(10, 10)
-P = cor_fast_posdef(y)
-
-# compute a close (not nearest) correlation matrix in place
-Q = rand(10, 10)
-cor_fast_posdef!(Q)
+# compute the nearest correlation matrix in place
+S = rand(10, 10)
+nearest_cor!(S)
 ```
 
 ## Details
 
-- `cor_nearest_posdef` uses the quadratically convergent Newton method as described by Qi and Sun
-- `cor_fast_posdef` computes the eigen decomposition of the input matrix, and replaces any negative eigenvalues with a small positive value, then re-creates the input matrix with the adjusted eigenvalues
+The method `nearest_cor` accepts a matrix and a nearest correlation algorithm. The following algorithms are implemented:
+
+- `Newton`: A quadratically convergent algorithm
 
 ## References
 
