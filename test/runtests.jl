@@ -2,16 +2,24 @@ using NearestCorrelationMatrix
 using LinearAlgebra
 using Test
 
-r_negdef = [
-    1.00 0.82 0.56 0.44
-    0.82 1.00 0.28 0.85
-    0.56 0.28 1.00 0.22
-    0.44 0.85 0.22 1.00
-]
 
-supported_types = [Float16, Float32, Float64]
+@testset "Utilities" begin
+    x = rand(10, 10)
+    NearestCorrelationMatrix._make_symmetric!(x)
+    @test issymmetric(x)
+end
 
-@testset "NearestCorrelationMatrix.jl" begin
+
+@testset "Nearest Correlation" begin
+
+    r_negdef = [
+        1.00 0.82 0.56 0.44
+        0.82 1.00 0.28 0.85
+        0.56 0.28 1.00 0.22
+        0.44 0.85 0.22 1.00
+    ]
+
+    supported_types = [Float16, Float32, Float64]
 
     @testset "Nearest positive definite" begin
         r = nearest_cor(r_negdef)

@@ -11,35 +11,36 @@ abstract type NearestCorrelationAlgorithm end
 default_alg() = Newton()
 
 
-export nearest_cor, nearest_cor!, Newton
-
+export nearest_cor, nearest_cor!, Newton, AlternatingProjection
 
 
 include("common.jl")
 include("nearest_correlation.jl")
 include("newton_method.jl")
+include("alternating_projection.jl")
 
 
 @precompile_setup begin
-    f16_inplace = rand(Float16, 10, 10)
-    f32_inplace = rand(Float32, 10, 10)
-    f64_inplace = rand(Float64, 10, 10)
+    function make_data(T, n)
+        x = 2 * rand(T, n, n) .- one(T)
+        _set_diag!(x, one(T))
+        _make_symmetric!(x)
+        return x
+    end
 
-    f16 = rand(Float16, 10, 10)
-    f32 = rand(Float32, 10, 10)
-    f64 = rand(Float64, 10, 10)
+    f32 = make_data(Float32, 5)
+    f64 = make_data(Float64, 5)
 
     @precompile_all_calls begin
-        Newton(τ = 1e-10, tol=1e-8)
-        default_alg()
+        alg = Newton(τ = 1e-10, tol=1e-8)
+        
+        nearest_cor(f32, alg)
+        nearest_cor(f64, alg)
 
-        nearest_cor!(f16_inplace)
-        nearest_cor!(f32_inplace)
-        nearest_cor!(f64_inplace)
+        alg = AlternatingProjection()
 
-        nearest_cor(f16)
-        nearest_cor(f32)
-        nearest_cor(f64)
+        nearest_cor(f32, alg)
+        nearest_cor(f64, alg)
     end
 end
 

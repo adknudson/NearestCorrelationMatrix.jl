@@ -38,18 +38,7 @@ end
 
 
 function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
-    n, nc = size(R)
-    n == nc || error("The input matrix must be square.")
-        
-    if !issymmetric(R)
-        @warn "The input matrix is not symmetric. Using the upper triangle to create a symmetric view."
-        R .= Symmetric(R, :U)
-    end
-
-    if !_diagonals_are_one(R)
-        @warn "The diagonal elements are not all equal to 1. Explicitly setting the values to 1."
-        R[diagind(R)] .= one(T)
-    end
+    n = _prep_matrix!(R)
     
     # Setup 
     onehalf    = T(0.5)
@@ -101,7 +90,7 @@ function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
         _precondition_matrix!(c, Ω₀, P)                           # [n,1]
         _pre_conjugate_gradient!(d, b, c, Ω₀, P, tol_cg, iter_cg) # [n,1]
 
-        slope = sum((Fy - b₀) .* d)    # [1]
+        slope = dot(Fy - b₀, d)    # [1]
         y    .= x₀ + d                 # [n,1]
         X    .= R + diagm(y)           # [n,n]
         λ, P = eigen(X)                # [n,1], [n,n]
@@ -136,7 +125,7 @@ function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
 
     X[diagind(X)] .+= τ
     _cov2cor!(X)
-    R .= X
+    copyto!(R, X)
     return R
 end
 
@@ -166,7 +155,7 @@ function _gradient(y::Vector{T}, λ₀::Vector{T}, P::Matrix{T}, b₀::Vector{T}
     
     λ[λ .< 0] .= zero(T)
     Fy = vec(sum((P .* λ') .* P, dims=2))
-    f  = T(T(0.5) * sum(λ.^2) - sum(b₀ .* y))
+    f  = T(0.5) * dot(λ, λ) - dot(b₀, y)
 
     return f, Fy
 end
@@ -178,7 +167,7 @@ end
 """
 function _pca!(X::Matrix{T}, b::Vector{T}, λ::Vector{T}, P::Matrix{T}) where {T<:AbstractFloat}
     n = length(b)
-    r = sum(λ .> 0)
+    r = sum(>(0), λ)
     s = n - r
 
     if r == 0
@@ -245,7 +234,7 @@ function _pre_conjugate_gradient!(p::Vector{T}, b::Vector{T}, c::Vector{T}, Ω�
         norm(r) ≤ ϵ_b && return p
         
         z .= r ./ c
-        rz2, rz1 = rz1, sum(r .* z)
+        rz2, rz1 = rz1, dot(r, z)
     end
     
     return p
@@ -279,7 +268,8 @@ function _precondition_matrix!(c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}) whe
         c .= sum(H, dims=1)'.^2 - sum(H₂, dims=1)'.^2 - 2 * sum(H₁ .* H12, dims=1)'
     end
 
-    c[c .< 1e-8] .= 1e-8
+    ϵ = T(1e-8)
+    c[c .< ϵ] .= ϵ
     return c
 end
 
@@ -292,7 +282,7 @@ The Omega matrix is used in creating the preconditioner matrix.
 """
 function _create_omega_matrix(λ::Vector{T}) where {T<:AbstractFloat}
     n = length(λ)
-    r = sum(λ .> 0)
+    r = sum(>(0), λ)
     s = n - r
 
     r == 0 && return zeros(T, 0, 0)
@@ -325,7 +315,7 @@ function _jacobian!(w::Vector{T}, x::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, 
     end
 
     if r == n
-        w .= x .* (1 + perturbation)
+        copyto!(w, x .* (1 + perturbation))
         return w
     end
 
