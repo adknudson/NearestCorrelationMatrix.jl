@@ -61,7 +61,7 @@ function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
     y    = zeros(T, n)  # [n,1]
     x₀   = copy(y)      # [n,1]
     X    = copy(R)      # [n,n]
-    λ, P = eigen(X)     # [n,1], [n,n]
+    λ, P = eigen(Symmetric(X)) # [n,1], [n,n]
     reverse!(λ)         # [n,1]
     reverse!(P; dims=2) # [n,n]
 
@@ -93,7 +93,7 @@ function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
         slope = dot(Fy - b₀, d)    # [1]
         y    .= x₀ + d                 # [n,1]
         X    .= R + diagm(y)           # [n,n]
-        λ, P = eigen(X)                # [n,1], [n,n]
+        λ, P = eigen(Symmetric(X))     # [n,1], [n,n]
         reverse!(λ)                    # [n,1]
         reverse!(P; dims=2)            # [n,n]
         f, Fy = _gradient(y, λ, P, b₀) # [1], [n,1]
@@ -103,7 +103,7 @@ function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
             k_inner += 1
             y    .= x₀ + d * onehalf^k_inner # [n,1]
             X    .= R + diagm(y)             # [n,n]
-            λ, P = eigen(X)                  # [n,1], [n,n]
+            λ, P = eigen(Symmetric(X))       # [n,1], [n,n]
             reverse!(λ)                      # [n,1]
             reverse!(P; dims=2)              # [n,n]
             f, Fy = _gradient(y, λ, P, b₀)   # [1], [n,1]

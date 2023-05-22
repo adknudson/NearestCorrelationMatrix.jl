@@ -9,7 +9,7 @@ end
 
 
 function _getAplus(A::Matrix{T}) where {T<:AbstractFloat}
-    λ, P = eigen(A)
+    λ, P = eigen(Symmetric(A))
     λ[λ .< zero(T)] .= zero(T)
     return P * Diagonal(λ) * transpose(P)
 end
@@ -53,8 +53,6 @@ function _nearest_cor!(A::Matrix{T}, alg::AlternatingProjection) where {T<:Abstr
         converged = conv ≤ tol
         i += 1
     end
-
-    @info "Algorithm ended after $i iterations."
 
     return A
 end
