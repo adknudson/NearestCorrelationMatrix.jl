@@ -14,9 +14,17 @@ end
 Project onto the positive semidefinite matrices.
 """
 function _project_psd(A::AbstractMatrix{T}) where {T<:AbstractFloat}
-    λ, Q = eigen(A)
+    λ, Q = eigen(Symmetric(A))
     return Q * Diagonal(max.(λ, zero(T))) * Q'
 end
+
+# eigen(Symmetric(Matrix{Float16})) returns a decomposition with Float32 eltype
+# eigen(Matrix{Float16}) returns a decomposition with Float16 eltype
+function _project_psd(A::AbstractMatrix{Float16})
+    λ, Q = eigen(A)
+    return Q * Diagonal(max.(λ, zero(Float16))) * Q'
+end
+
 
 
 

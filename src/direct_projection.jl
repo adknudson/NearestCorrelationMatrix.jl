@@ -18,6 +18,12 @@ end
 
 
 
+_eigsym_reversed(X::AbstractMatrix{Float16}) = _eigen_reversed(X)
+_eigsym_reversed(X::AbstractMatrix{Float32}) = _eigen_reversed(Symmetric(X))
+_eigsym_reversed(X::AbstractMatrix{Float64}) = _eigen_reversed(Symmetric(X))
+
+
+
 function _nearest_cor!(X::Matrix{T}, alg::DirectProjection) where {T<:AbstractFloat}
     n = _prep_matrix!(X)
     τ  = T(alg.τ)
@@ -26,7 +32,7 @@ function _nearest_cor!(X::Matrix{T}, alg::DirectProjection) where {T<:AbstractFl
         X[diagind(X)] .-= τ
     end
     
-    λ, P = _eigen_reversed(Symmetric(X))
+    λ, P = _eigsym_reversed(X)
     
     r = count(>(0), λ)
     s = n - r
