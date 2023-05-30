@@ -68,3 +68,11 @@ function _prep_matrix!(R::AbstractMatrix{T}) where {T<:AbstractFloat}
 
     return size(R, 1)
 end
+
+
+function _eigen_reversed(X)
+    λ, P = eigen(X)
+    reverse!(λ)
+    reverse!(P; dims=2)
+    return λ, P
+end

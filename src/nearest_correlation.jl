@@ -64,5 +64,5 @@ true
 """
 function nearest_cor end
 
-nearest_cor(X, alg::NearestCorrelationAlgorithm) = nearest_cor!(Matrix(X), alg)
+nearest_cor(X, alg::NearestCorrelationAlgorithm) = nearest_cor!(copy(X), alg)
 nearest_cor(X) = nearest_cor(X, default_alg())

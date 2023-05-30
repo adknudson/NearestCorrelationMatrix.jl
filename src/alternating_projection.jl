@@ -8,24 +8,28 @@ struct AlternatingProjection <: NearestCorrelationAlgorithm
 end
 
 
-function _getAplus(A::Matrix{T}) where {T<:AbstractFloat}
-    λ, P = eigen(Symmetric(A))
-    λ[λ .< zero(T)] .= zero(T)
-    return P * Diagonal(λ) * transpose(P)
+"""
+    _project_psd(A::AbstractMatrix{T}) where {T<:AbstractFloat}
+
+Project onto the positive semidefinite matrices.
+"""
+function _project_psd(A::AbstractMatrix{T}) where {T<:AbstractFloat}
+    λ, Q = eigen(A)
+    return Q * Diagonal(max.(λ, zero(T))) * Q'
 end
 
 
-function _getPs!(X::Matrix{T}, A::Matrix{T}, W::Diagonal{T, Vector{T}}) where {T<:AbstractFloat}
+
+function _project_symmetric(A::AbstractMatrix{T}, W::Diagonal{T, Vector{T}}) where {T<:AbstractFloat}
     W05 = sqrt(W)
-    X .= inv(W05) * _getAplus(W05 * A * W05) * inv(W05)
-    return X
+    return inv(W05) * _project_psd(Symmetric(W05 * A * W05)) * inv(W05)
 end
 
 
-function _getPu!(A::Matrix{T}, X::Matrix{T}, W::Diagonal{T, Vector{T}}) where {T<:AbstractFloat}
-    copyto!(A, X)
-    A[diagind(A)] .= diag(W)
-    return A
+function _project_unitdiag(X::AbstractMatrix{T}) where {T<:AbstractFloat}
+    Y = copy(X)
+    Y[diagind(Y)] .= one(T)
+    return Y
 end
 
 
@@ -35,24 +39,28 @@ function _nearest_cor!(A::Matrix{T}, alg::AlternatingProjection) where {T<:Abstr
     tol = T(alg.tol)
 
     W = Diagonal(ones(T, n))
-    Δ = zeros(T, n, n)
-    X = zeros(T, n, n)
-    R = zeros(T, n, n)
+    Sk = zeros(T, n, n)
+    Rk = zeros(T, n, n)
+    Xk = zeros(T, n, n)
+    Yk = copy(A)
 
     i = 0
     converged = false
     conv = typemax(T)
 
     while i < alg.maxiter && !converged
-        R .= A - Δ
-        _getPs!(X, R, W)
-        Δ .= X - R
-        _getPu!(A, X, W)
+        Rk .= Yk - Sk
+        Xk .= _project_symmetric(Rk, W)
+        Sk .= Xk - Rk
+        Yk .= _project_unitdiag(Xk)
 
-        conv = norm(A - X) / norm(A)
-        converged = conv ≤ tol
+        conv = norm(Yk - Xk) / norm(Yk)
+        converged = conv ≤ tol && isposdef(Yk)
         i += 1
     end
 
+    A .= Yk
+    _cov2cor!(Yk)
+    copyto!(A, Yk)
     return A
 end

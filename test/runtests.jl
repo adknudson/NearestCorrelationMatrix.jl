@@ -3,6 +3,26 @@ using LinearAlgebra
 using Test
 
 
+
+const r_negdef = [
+    1.00 0.82 0.56 0.44
+    0.82 1.00 0.28 0.85
+    0.56 0.28 1.00 0.22
+    0.44 0.85 0.22 1.00
+]
+
+const supported_types = [Float64, Float32]
+
+
+@testset "Setup" begin
+    @test NearestCorrelationMatrix._constrained_to_pm_one(r_negdef)
+    @test NearestCorrelationMatrix._diagonals_are_one(r_negdef)
+    @test issymmetric(r_negdef)
+    @test !isposdef(r_negdef)
+end
+
+
+
 @testset "Utilities" begin
     x = rand(10, 10)
     NearestCorrelationMatrix._make_symmetric!(x)
@@ -10,46 +30,100 @@ using Test
 end
 
 
-@testset "Nearest Correlation" begin
+@testset "Newton Algorithm" begin
 
-    r_negdef = [
-        1.00 0.82 0.56 0.44
-        0.82 1.00 0.28 0.85
-        0.56 0.28 1.00 0.22
-        0.44 0.85 0.22 1.00
-    ]
+    @testset "Positive Definite" begin
+        @testset "Copy" begin
+            alg = Newton()
+            r = nearest_cor(r_negdef, alg)
+    
+            @test NearestCorrelationMatrix._diagonals_are_one(r)
+            @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+            @test issymmetric(r)
+            @test isposdef(r)
+        end
 
-    supported_types = [Float16, Float32, Float64]
+        @testset "In Place" begin
+            for T in supported_types
+                alg = Newton(τ=sqrt(eps(T)))
+                r = T.(r_negdef)
+                nearest_cor!(r, alg)
 
-    @testset "Nearest positive definite" begin
-        r = nearest_cor(r_negdef)
-        @test NearestCorrelationMatrix._iscorrelation(r)
+                @test NearestCorrelationMatrix._diagonals_are_one(r)
+                @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+                @test issymmetric(r)
+                @test isposdef(r)
 
-        # Must respect input eltype
-        for T in supported_types
-            r = T.(r_negdef)
-            @test eltype(nearest_cor(r)) === T
+                @test eltype(r) === T
+            end
         end
     end
 
-    @testset "Nearest positive semidefinite" begin
-        r = nearest_cor(r_negdef, Newton(τ=0.0))
+    @testset "Positive Semidefinite" begin
+        alg = Newton(τ=0.0)
+        r = nearest_cor(r_negdef, alg)
+        
         λ = eigvals(r)
-        @test issymmetric(r)
-        @test all(λ .≥ 0)
+        @test all(>=(0), λ)
+
         @test NearestCorrelationMatrix._diagonals_are_one(r)
         @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+        @test issymmetric(r)
     end
 
-    @testset "Nearest positive definite in place" begin
-        r = copy(r_negdef)
-        nearest_cor!(r)
-        @test NearestCorrelationMatrix._iscorrelation(r)
+end
 
-        # Must respect input eltype
+
+@testset "Alternating Projection Algorithm" begin
+    @testset "Copy" begin
+        alg = AlternatingProjection()
+        r = nearest_cor(r_negdef, alg)
+        
+        @test NearestCorrelationMatrix._diagonals_are_one(r)
+        @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+        @test issymmetric(r)
+        @test isposdef(r)
+    end
+
+    @testset "In Place" begin
         for T in supported_types
+            alg = AlternatingProjection(tol=sqrt(eps(T)))
             r = T.(r_negdef)
-            nearest_cor!(r)
+            nearest_cor!(r, alg)
+            
+            @test NearestCorrelationMatrix._diagonals_are_one(r)
+            @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+            @test issymmetric(r)
+            @test isposdef(r)
+
+            @test eltype(r) === T
+        end
+    end
+end
+
+
+@testset "Projection Algorithm" begin
+    @testset "Copy" begin
+        alg = DirectProjection()
+        r = nearest_cor(r_negdef, alg)
+        
+        @test NearestCorrelationMatrix._diagonals_are_one(r)
+        @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+        @test issymmetric(r)
+        @test isposdef(r)
+    end
+
+    @testset "In Place" begin
+        for T in supported_types
+            alg = DirectProjection(sqrt(eps(T)))
+            r = T.(r_negdef)
+            nearest_cor!(r, alg)
+            
+            @test NearestCorrelationMatrix._diagonals_are_one(r)
+            @test NearestCorrelationMatrix._constrained_to_pm_one(r)
+            @test issymmetric(r)
+            @test isposdef(r)
+
             @test eltype(r) === T
         end
     end
