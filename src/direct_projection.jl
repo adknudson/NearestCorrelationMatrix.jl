@@ -7,13 +7,8 @@ correlation matrix is needed without concern for it being the most optimal.
 # Parameters
 - `τ`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
 """
-struct DirectProjection <: NearestCorrelationAlgorithm 
-    τ::Float64
-
-    function DirectProjection(τ=1e-6)
-        τ ≥ 0 || throw(ArgumentError("τ must be non-negative."))
-        return new(Float64(τ))
-    end
+Base.@kwdef struct DirectProjection <: NearestCorrelationAlgorithm 
+    τ::Float64 = 1e-6
 end
 
 

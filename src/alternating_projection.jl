@@ -1,10 +1,6 @@
-struct AlternatingProjection <: NearestCorrelationAlgorithm 
-    maxiter::Int
-    tol::Float64
-
-    function AlternatingProjection(; maxiter=100, tol=1e-7)
-        return new(maxiter, tol)
-    end
+Base.@kwdef struct AlternatingProjection <: NearestCorrelationAlgorithm 
+    maxiter::Int = 100
+    tol::Float64 = 1e-7
 end
 
 

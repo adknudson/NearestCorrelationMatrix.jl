@@ -10,26 +10,14 @@
 - `iter_inner`: the max number of refinements during the Newton step
 - `iter_cg`: the max number of iterations in the conjugate gradient method
 """
-struct Newton <: NearestCorrelationAlgorithm
-    τ::Float64
-    tol::Float64
-    tol_cg::Float64
-    tol_ls::Float64
-    iter_outer::Int
-    iter_inner::Int
-    iter_cg::Int
-
-    function Newton(; τ=1e-6, tol=1e-3, tol_cg=1e-2, tol_ls=1e-4, iter_outer=200, iter_inner=20, iter_cg=200)
-        return new(
-            max(zero(Float64), float(τ)),
-            max(eps(Float64), float(tol)),
-            float(tol_cg),
-            Float64(tol_ls),
-            Int(iter_outer),
-            Int(iter_inner),
-            Int(iter_cg),
-        )
-    end
+Base.@kwdef struct Newton <: NearestCorrelationAlgorithm
+    τ::Float64 = 1e-6
+    tol::Float64 = 1e-3
+    tol_cg::Float64 = 1e-2
+    tol_ls::Float64 = 1e-4
+    iter_outer::Int = 200
+    iter_inner::Int = 20
+    iter_cg::Int = 200
 end
 
 
