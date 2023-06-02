@@ -1,7 +1,11 @@
+using Test
+using Aqua
 using NearestCorrelationMatrix
 using LinearAlgebra
-using Test
 
+
+Aqua.test_all(NearestCorrelationMatrix; ambiguities=false)
+Aqua.test_ambiguities(NearestCorrelationMatrix)
 
 
 const r_negdef = [
