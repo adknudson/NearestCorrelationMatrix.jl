@@ -23,23 +23,28 @@ function _set_diag!(X::AbstractMatrix{T}, v::T) where T
 end
 
 
-function _make_symmetric!(X::AbstractMatrix)
+"""
+Copy the upper triangle of a matrix to the lower triangle.
+"""
+function _copytolower!(X::AbstractMatrix)
     nr, nc = size(X)
     nr == nc || throw(DimensionMismatch("Matrix must be square."))
 
     for j in 1:nc-1
         for i in j+1:nr
-            X[i,j] = X[j,i]
+            @inbounds X[i,j] = X[j,i]
         end
     end
 
     X
 end
 
+_copytolower!(X::Symmetric) = X
+
 
 function _cor_constrain!(X::AbstractMatrix{<:AbstractFloat})
     X .= clampcor.(X)
-    _make_symmetric!(X)
+    _copytolower!(X)
     _set_diag!(X, one(eltype(X)))
     return X
 end
@@ -52,13 +57,20 @@ function _cov2cor!(X::AbstractMatrix{<:AbstractFloat})
     return X
 end
 
+function _cov2cor!(X::Symmetric)
+    D = sqrt(inv(Diagonal(X)))
+    X.data .= D * X * D
+    _cor_constrain!(X)
+    return X
+end
+
 
 function _prep_matrix!(R::AbstractMatrix{T}) where {T<:AbstractFloat}
     _issquare(R) || throw(DimensionMismatch("The input matrix must be square."))
         
     if !issymmetric(R)
         @warn "The input matrix is not symmetric. Using the upper triangle to create a symmetric view."
-        _make_symmetric!(R)
+        _copytolower!(R)
     end
 
     if !_diagonals_are_one(R)

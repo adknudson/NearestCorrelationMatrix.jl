@@ -27,12 +27,14 @@ include("newton_method.jl")
 include("alternating_projection.jl")
 include("direct_projection.jl")
 
+include("Experimental/Experimental.jl")
+
 
 @setup_workload begin
     function make_data(T, n)
         x = 2 * rand(T, n, n) .- one(T)
         _set_diag!(x, one(T))
-        _make_symmetric!(x)
+        _copytolower!(x)
         return x
     end
 
