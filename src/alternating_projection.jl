@@ -64,7 +64,6 @@ function _nearest_cor!(A::Matrix{T}, alg::AlternatingProjection) where {T<:Abstr
     end
 
     A .= Yk
-    _cov2cor!(Yk)
-    copyto!(A, Yk)
+    _cov2cor!(A)
     return A
 end
