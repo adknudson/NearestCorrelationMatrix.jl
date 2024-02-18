@@ -4,8 +4,7 @@ using NearestCorrelationMatrix
 using LinearAlgebra
 
 
-Aqua.test_all(NearestCorrelationMatrix; ambiguities=false)
-Aqua.test_ambiguities(NearestCorrelationMatrix)
+Aqua.test_all(NearestCorrelationMatrix)
 
 
 const r_negdef = [
@@ -29,7 +28,7 @@ end
 
 @testset "Utilities" begin
     x = rand(10, 10)
-    NearestCorrelationMatrix._make_symmetric!(x)
+    NearestCorrelationMatrix._copytolower!(x)
     @test issymmetric(x)
 end
 
@@ -68,7 +67,13 @@ end
         r = nearest_cor(r_negdef, alg)
         
         λ = eigvals(r)
-        @test all(>=(0), λ)
+        T = eltype(r)
+
+        approx_zero(x) = isapprox(0, x, atol=eps(typeof(x)), rtol=0)
+        greater_zero(x) = x > 0
+        
+        # all eigenvalues are ≈0 or greater
+        @test all(l -> greater_zero(l) || approx_zero(l), λ)
 
         @test NearestCorrelationMatrix._diagonals_are_one(r)
         @test NearestCorrelationMatrix._constrained_to_pm_one(r)

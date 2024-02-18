@@ -1,17 +1,18 @@
 name = "NearestCorrelationMatrix"
 uuid = "59ddf330-608c-4938-8bc9-a4ee97bbbea6"
 authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
-Aqua = "0.6"
+Aqua = "0.8"
+LinearAlgebra = "1"
 PrecompileTools = "1"
-julia = "1.6, 1.7, 1.8, 1.9"
+Test = "1"
+julia = "1.7, 1.8, 1.9, 1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"

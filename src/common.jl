@@ -1,3 +1,5 @@
+_clampcor(x::Real) = clamp(x, -1, 1)
+
 _diagonals_are_one(X::AbstractMatrix{<:AbstractFloat}) = all(==(one(eltype(X))), diag(X))
 
 
@@ -43,7 +45,7 @@ _copytolower!(X::Symmetric) = X
 
 
 function _cor_constrain!(X::AbstractMatrix{<:AbstractFloat})
-    X .= clampcor.(X)
+    X .= _clampcor.(X)
     _copytolower!(X)
     _set_diag!(X, one(eltype(X)))
     return X
@@ -88,3 +90,5 @@ function _eigen_reversed(X)
     reverse!(P; dims=2)
     return λ, P
 end
+
+

@@ -2,7 +2,6 @@ module NearestCorrelationMatrix
 
 using LinearAlgebra: diag, diagm, diagind, dot, eigen, issymmetric, isposdef, norm
 using LinearAlgebra: Diagonal, Symmetric
-using Statistics: clampcor
 using PrecompileTools
 
 
@@ -13,21 +12,19 @@ default_alg() = Newton()
 
 
 export 
-    nearest_cor, 
-    nearest_cor!, 
-    Newton, 
+    nearest_cor,
+    nearest_cor!,
+    Newton,
     AlternatingProjection,
     DirectProjection,
     default_alg
 
 
 include("common.jl")
-include("nearest_correlation.jl")
-include("newton_method.jl")
-include("alternating_projection.jl")
-include("direct_projection.jl")
-
-include("Experimental/Experimental.jl")
+include("nearestcor.jl")
+include("newton.jl")
+include("alternatingprojection.jl")
+include("directprojection.jl")
 
 
 @setup_workload begin
