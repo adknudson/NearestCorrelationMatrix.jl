@@ -1,21 +1,34 @@
-_clampcor(x::Real) = clamp(x, -1, 1)
-
-_diagonals_are_one(X::AbstractMatrix{<:AbstractFloat}) = all(==(one(eltype(X))), diag(X))
+_clampcor(x::Real) = clamp(x, -one(x), one(x))
 
 
-_constrained_to_pm_one(X::AbstractMatrix{<:AbstractFloat}) = all(-one(eltype(X)) .≤ X .≤ one(eltype(X)))
-
-
-function _iscorrelation(X::AbstractMatrix{<:AbstractFloat})
-    return issymmetric(X) && _diagonals_are_one(X) && _constrained_to_pm_one(X) && isposdef(X)
+function _diagonals_are_one(X::AbstractMatrix{T})  where {T<:Real}
+    return all(==(one(T)), diag(X))
 end
 
 
-_issquare(X::AbstractMatrix) = begin m, n = size(X); return m == n end
+function _constrained_to_pm_one(X::AbstractMatrix{T}) where {T<:Real}
+    return all(-one(T) .≤ X .≤ one(T))
+end
+
+
+function _is_correlation(X::AbstractMatrix{<:AbstractFloat})
+    issymmetric(X)            || return false
+    _diagonals_are_one(X)     || return false
+    _constrained_to_pm_one(X) || return false
+    isposdef(X)               || return false
+
+    return true
+end
+
+
+function _is_square(X::AbstractMatrix)
+    m, n = size(X)
+    return m == n
+end
 
 
 function _set_diag!(X::AbstractMatrix{T}, v::T) where T
-    _issquare(X) || throw(DimensionMismatch("Matrix must be square."))
+    _is_square(X) || throw(DimensionMismatch("Matrix must be square."))
 
     for i in diagind(X)
         X[i] = v
@@ -28,7 +41,7 @@ end
 """
 Copy the upper triangle of a matrix to the lower triangle.
 """
-function _copytolower!(X::AbstractMatrix)
+function _copytolower!(X::AbstractMatrix{T}) where T
     nr, nc = size(X)
     nr == nc || throw(DimensionMismatch("Matrix must be square."))
 
@@ -44,7 +57,7 @@ end
 _copytolower!(X::Symmetric) = X
 
 
-function _cor_constrain!(X::AbstractMatrix{<:AbstractFloat})
+function _cor_constrain!(X::AbstractMatrix{T}) where {T<:Real}
     X .= _clampcor.(X)
     _copytolower!(X)
     _set_diag!(X, one(eltype(X)))
@@ -52,7 +65,7 @@ function _cor_constrain!(X::AbstractMatrix{<:AbstractFloat})
 end
 
 
-function _cov2cor!(X::AbstractMatrix{<:AbstractFloat})
+function _cov2cor!(X::AbstractMatrix{T}) where {T<:Real}
     D = sqrt(inv(Diagonal(X)))
     X .= D * X * D
     _cor_constrain!(X)
@@ -67,16 +80,14 @@ function _cov2cor!(X::Symmetric)
 end
 
 
-function _prep_matrix!(R::AbstractMatrix{T}) where {T<:AbstractFloat}
-    _issquare(R) || throw(DimensionMismatch("The input matrix must be square."))
-        
+function _prep_matrix!(R::AbstractMatrix{T}) where {T<:Real}
+    _is_square(R) || throw(DimensionMismatch("The input matrix must be square."))
+
     if !issymmetric(R)
-        @warn "The input matrix is not symmetric. Using the upper triangle to create a symmetric view."
         _copytolower!(R)
     end
 
     if !_diagonals_are_one(R)
-        @warn "The diagonal elements are not all equal to 1. Explicitly setting the values to 1."
         _set_diag!(R, one(T))
     end
 
@@ -90,5 +101,3 @@ function _eigen_reversed(X)
     reverse!(P; dims=2)
     return λ, P
 end
-
-

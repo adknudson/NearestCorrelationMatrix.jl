@@ -1,5 +1,5 @@
 """
-    Newton
+    Newton(; kwargs...)
 
 # Parameters
 - `τ`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
@@ -22,7 +22,7 @@ end
 
 
 
-function _nearest_cor!(R::Matrix{T}, alg::Newton) where {T<:AbstractFloat}
+function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
     n = _prep_matrix!(R)
 
     # Setup
@@ -125,7 +125,12 @@ and
 \\nabla f(y) = Diag((A + diag(y))_+) - e
 ```
 """
-function _gradient(y::Vector{T}, λ₀::Vector{T}, P::Matrix{T}, b₀::Vector{T}) where {T<:AbstractFloat}
+function _gradient(
+    y::AbstractVector{T},
+    λ₀::AbstractVector{T},
+    P::AbstractMatrix{T},
+    b₀::AbstractVector{T}
+) where {T<:AbstractFloat}
     r = sum(λ₀ .> 0)
     λ = copy(λ₀)
     n = length(y)
@@ -144,7 +149,12 @@ end
 """
     _pca!(X::Matrix{T}, b::Vector{T}, λ::Vector{T}, P::Matrix{T}) where {T<:AbstractFloat}
 """
-function _pca!(X::Matrix{T}, b::Vector{T}, λ::Vector{T}, P::Matrix{T}) where {T<:AbstractFloat}
+function _pca!(
+    X::AbstractMatrix{T},
+    b::AbstractVector{T},
+    λ::AbstractVector{T},
+    P::AbstractMatrix{T}
+) where {T<:AbstractFloat}
     n = length(b)
     r = sum(>(0), λ)
     s = n - r
@@ -183,7 +193,15 @@ end
 
 Preconditioned conjugate gradient method to solve Vₖdₖ = -∇f(yₖ)
 """
-function _pre_conjugate_gradient!(p::Vector{T}, b::Vector{T}, c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, tol::Real, num_iter::Int) where {T<:AbstractFloat}
+function _pre_conjugate_gradient!(
+    p::AbstractVector{T},
+    b::AbstractVector{T},
+    c::AbstractVector{T},
+    Ω₀::AbstractMatrix{T},
+    P::AbstractMatrix{T},
+    tol::Real,
+    num_iter::Int
+) where {T<:AbstractFloat}
     fill!(p, zero(T))
 
     n = length(p)
@@ -226,7 +244,11 @@ end
 
 Create the preconditioner matrix used in solving the linear system `Vₖdₖ = -∇f(yₖ)` in the conjugate gradient method. Stores the result in `c`
 """
-function _precondition_matrix!(c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}) where {T<:AbstractFloat}
+function _precondition_matrix!(
+    c::AbstractVector{T},
+    Ω₀::AbstractMatrix{T},
+    P::AbstractMatrix{T}
+) where {T<:AbstractFloat}
     r, s = size(Ω₀)
     n = length(c)
 
@@ -259,7 +281,7 @@ end
 
 The Omega matrix is used in creating the preconditioner matrix.
 """
-function _create_omega_matrix(λ::Vector{T}) where {T<:AbstractFloat}
+function _create_omega_matrix(λ::AbstractVector{T}) where {T<:AbstractFloat}
     n = length(λ)
     r = sum(>(0), λ)
     s = n - r
@@ -284,7 +306,13 @@ end
 
 Create the Generalized Jacobian matrix for the Newton direction step, and store in `w`
 """
-function _jacobian!(w::Vector{T}, x::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, n::Int) where {T<:AbstractFloat}
+function _jacobian!(
+    w::AbstractVector{T},
+    x::AbstractVector{T},
+    Ω₀::AbstractMatrix{T},
+    P::AbstractMatrix{T},
+    n::Int
+) where {T<:AbstractFloat}
     r, s = size(Ω₀)
     perturbation = T(1e-10)
 

@@ -1,14 +1,14 @@
 """
-    nearest_cor!(R::Matrix{<:AbstractFloat}, alg::NearestCorrelationAlgorithm)
+    nearest_cor!(R::AbstractMatrix{<:AbstractFloat}, alg::NearestCorrelationAlgorithm)
 
 Return the nearest positive definite correlation matrix to `R`. This method updates `R` in place.
 """
 function nearest_cor! end
 
-nearest_cor!(X::Matrix{Float64}, alg::NearestCorrelationAlgorithm) = _nearest_cor!(X, alg)
-nearest_cor!(X::Matrix{Float32}, alg::NearestCorrelationAlgorithm) = _nearest_cor!(X, alg)
+nearest_cor!(X::AbstractMatrix{Float64}, alg::NearestCorrelationAlgorithm) = _nearest_cor!(X, alg)
+nearest_cor!(X::AbstractMatrix{Float32}, alg::NearestCorrelationAlgorithm) = _nearest_cor!(X, alg)
 
-function nearest_cor!(X::Matrix{Float16}, alg::NearestCorrelationAlgorithm)
+function nearest_cor!(X::AbstractMatrix{Float16}, alg::NearestCorrelationAlgorithm)
     @warn "Float16s are converted to Float32s before computing the nearest correlation." maxlog=1
 
     R = Float32.(X)
@@ -18,7 +18,7 @@ function nearest_cor!(X::Matrix{Float16}, alg::NearestCorrelationAlgorithm)
     return X
 end
 
-function nearest_cor!(X::Matrix{BigFloat}, alg::NearestCorrelationAlgorithm)
+function nearest_cor!(X::AbstractMatrix{BigFloat}, alg::NearestCorrelationAlgorithm)
     @warn "BigFloats are not fully supported by LinearAlgebra. Converting to Float64s." maxlog=1
 
     R = Float64.(X)

@@ -1,5 +1,5 @@
 """
-    DirectProjection
+    DirectProjection(; τ=1e-6)
 
 Single step projection of the input matrix into the set of correlation matrices. Useful when
 a "close" correlation matrix is needed without concern for it being the most optimal.
@@ -19,7 +19,7 @@ _eigsym_reversed(X::AbstractMatrix{Float64}) = _eigen_reversed(Symmetric(X))
 
 
 
-function _nearest_cor!(X::Matrix{T}, alg::DirectProjection) where {T<:AbstractFloat}
+function _nearest_cor!(X::AbstractMatrix{T}, alg::DirectProjection) where {T<:AbstractFloat}
     n = _prep_matrix!(X)
     τ  = T(alg.τ)
 

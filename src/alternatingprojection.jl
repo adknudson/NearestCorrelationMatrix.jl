@@ -1,5 +1,5 @@
 """
-    AlternatingProjection
+    AlternatingProjection(; maxiter=100, tol=1e-7)
 
 The alternating projections algorithm developed by Nick Higham.
 """
@@ -42,7 +42,7 @@ function _project_unitdiag(X::AbstractMatrix{T}) where {T<:AbstractFloat}
 end
 
 
-function _nearest_cor!(A::Matrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
+function _nearest_cor!(A::AbstractMatrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
     n = _prep_matrix!(A)
 
     tol = T(alg.tol)
