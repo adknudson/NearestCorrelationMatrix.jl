@@ -25,7 +25,6 @@ const supported_types = [Float64, Float32]
 end
 
 
-
 @testset "Utilities" begin
     x = rand(10, 10)
     NearestCorrelationMatrix._copytolower!(x)
@@ -39,7 +38,7 @@ end
         @testset "Copy" begin
             alg = Newton()
             r = nearest_cor(r_negdef, alg)
-    
+
             @test NearestCorrelationMatrix._diagonals_are_one(r)
             @test NearestCorrelationMatrix._constrained_to_pm_one(r)
             @test issymmetric(r)
@@ -65,13 +64,13 @@ end
     @testset "Positive Semidefinite" begin
         alg = Newton(τ=0.0)
         r = nearest_cor(r_negdef, alg)
-        
+
         λ = eigvals(r)
         T = eltype(r)
 
         approx_zero(x) = isapprox(0, x, atol=eps(typeof(x)), rtol=0)
         greater_zero(x) = x > 0
-        
+
         # all eigenvalues are ≈0 or greater
         @test all(l -> greater_zero(l) || approx_zero(l), λ)
 
@@ -87,7 +86,7 @@ end
     @testset "Copy" begin
         alg = AlternatingProjection()
         r = nearest_cor(r_negdef, alg)
-        
+
         @test NearestCorrelationMatrix._diagonals_are_one(r)
         @test NearestCorrelationMatrix._constrained_to_pm_one(r)
         @test issymmetric(r)
@@ -99,7 +98,7 @@ end
             alg = AlternatingProjection(tol=sqrt(eps(T)))
             r = T.(r_negdef)
             nearest_cor!(r, alg)
-            
+
             @test NearestCorrelationMatrix._diagonals_are_one(r)
             @test NearestCorrelationMatrix._constrained_to_pm_one(r)
             @test issymmetric(r)
@@ -115,7 +114,7 @@ end
     @testset "Copy" begin
         alg = DirectProjection()
         r = nearest_cor(r_negdef, alg)
-        
+
         @test NearestCorrelationMatrix._diagonals_are_one(r)
         @test NearestCorrelationMatrix._constrained_to_pm_one(r)
         @test issymmetric(r)
@@ -127,7 +126,7 @@ end
             alg = DirectProjection(sqrt(eps(T)))
             r = T.(r_negdef)
             nearest_cor!(r, alg)
-            
+
             @test NearestCorrelationMatrix._diagonals_are_one(r)
             @test NearestCorrelationMatrix._constrained_to_pm_one(r)
             @test issymmetric(r)
