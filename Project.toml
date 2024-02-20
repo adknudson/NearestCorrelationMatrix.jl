@@ -1,7 +1,7 @@
 name = "NearestCorrelationMatrix"
 uuid = "59ddf330-608c-4938-8bc9-a4ee97bbbea6"
 authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
