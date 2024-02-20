@@ -5,7 +5,7 @@ Return the nearest positive definite correlation matrix to `R`. This method upda
 
 # Examples
 
-```jldoctest; setup = :(using NearestCorrelationMatrix)
+```julia-repl
 julia> import LinearAlgebra: isposdef
 
 julia> r = [
@@ -65,7 +65,7 @@ Return the nearest positive definite correlation matrix to `R`.
 
 # Examples
 
-```jldoctest; setup = :(using NearestCorrelationMatrix)
+```julia-repl
 julia> import LinearAlgebra: isposdef
 
 julia> r = [
