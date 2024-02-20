@@ -11,12 +11,11 @@ function _constrained_to_pm_one(X::AbstractMatrix{T}) where {T<:Real}
 end
 
 
-function _is_correlation(X::AbstractMatrix{<:AbstractFloat})
+function _is_correlation(X::AbstractMatrix{T}) where {T<:Real}
     issymmetric(X)            || return false
     _diagonals_are_one(X)     || return false
     _constrained_to_pm_one(X) || return false
     isposdef(X)               || return false
-
     return true
 end
 
@@ -29,11 +28,9 @@ end
 
 function _set_diag!(X::AbstractMatrix{T}, v::T) where T
     _is_square(X) || throw(DimensionMismatch("Matrix must be square."))
-
     for i in diagind(X)
         X[i] = v
     end
-
     X
 end
 
@@ -42,15 +39,13 @@ end
 Copy the upper triangle of a matrix to the lower triangle.
 """
 function _copytolower!(X::AbstractMatrix{T}) where T
+    _is_square(X) || throw(DimensionMismatch("Matrix must be square."))
     nr, nc = size(X)
-    nr == nc || throw(DimensionMismatch("Matrix must be square."))
-
     for j in 1:nc-1
         for i in j+1:nr
             @inbounds X[i,j] = X[j,i]
         end
     end
-
     X
 end
 
