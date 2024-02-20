@@ -1,13 +1,13 @@
 """
     DirectProjection
 
-Single step projection of the input matrix into the set of correlation matrices. Useful when a "close"
-correlation matrix is needed without concern for it being the most optimal.
+Single step projection of the input matrix into the set of correlation matrices. Useful when
+a "close" correlation matrix is needed without concern for it being the most optimal.
 
 # Parameters
 - `τ`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
 """
-Base.@kwdef struct DirectProjection <: NearestCorrelationAlgorithm 
+Base.@kwdef struct DirectProjection <: NearestCorrelationAlgorithm
     τ::Float64 = 1e-6
 end
 
@@ -26,9 +26,9 @@ function _nearest_cor!(X::Matrix{T}, alg::DirectProjection) where {T<:AbstractFl
     if τ > zero(T)
         X[diagind(X)] .-= τ
     end
-    
+
     λ, P = _eigsym_reversed(X)
-    
+
     r = count(>(0), λ)
     s = n - r
 
@@ -36,7 +36,7 @@ function _nearest_cor!(X::Matrix{T}, alg::DirectProjection) where {T<:AbstractFl
         X .= zeros(T, n, n)
     elseif r == n
         # do nothing
-    elseif r == 1 
+    elseif r == 1
         X .= (λ[1] * λ[1]) * (P[:,1] * transpose(P[:,1]))
     elseif r ≤ s
         P₁   = @view P[:, 1:r]

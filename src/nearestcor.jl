@@ -14,7 +14,7 @@ function nearest_cor!(X::Matrix{Float16}, alg::NearestCorrelationAlgorithm)
     R = Float32.(X)
     nearest_cor!(R, alg)
     X .= Float16.(R)
-    
+
     return X
 end
 
@@ -41,12 +41,12 @@ Return the nearest positive definite correlation matrix to `R`.
 ```jldoctest
 julia> import LinearAlgebra: isposdef
 
-julia> r = [1.00 0.82 0.56 0.44; 0.82 1.00 0.28 0.85; 0.56 0.28 1.00 0.22; 0.44 0.85 0.22 1.00]
-4×4 Matrix{Float64}:
- 1.0   0.82  0.56  0.44
- 0.82  1.0   0.28  0.85
- 0.56  0.28  1.0   0.22
- 0.44  0.85  0.22  1.0
+julia> r = [
+    1.00 0.82 0.56 0.44
+    0.82 1.00 0.28 0.85
+    0.56 0.28 1.00 0.22
+    0.44 0.85 0.22 1.00
+];
 
 julia> isposdef(r)
 false

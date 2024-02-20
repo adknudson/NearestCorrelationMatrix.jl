@@ -5,13 +5,23 @@ using LinearAlgebra: Diagonal, Symmetric
 using PrecompileTools
 
 
+"""
+    NearestCorrelationAlgorithm
+
+Defines the abstract type for nearest correlation algorithms.
+"""
 abstract type NearestCorrelationAlgorithm end
 
 
+"""
+    default_alg()
+
+Returns the default algorithm for finding the nearest correlation matrix.
+"""
 default_alg() = Newton()
 
 
-export 
+export
     nearest_cor,
     nearest_cor!,
     Newton,
@@ -40,7 +50,7 @@ include("directprojection.jl")
 
     @compile_workload begin
         alg = Newton(τ = 1e-10, tol=1e-8)
-        
+
         nearest_cor(f32, alg)
         nearest_cor(f64, alg)
 

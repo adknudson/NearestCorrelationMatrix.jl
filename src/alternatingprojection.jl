@@ -1,4 +1,9 @@
-Base.@kwdef struct AlternatingProjection <: NearestCorrelationAlgorithm 
+"""
+    AlternatingProjection
+
+The alternating projections algorithm developed by Nick Higham.
+"""
+Base.@kwdef struct AlternatingProjection <: NearestCorrelationAlgorithm
     maxiter::Int = 100
     tol::Float64 = 1e-7
 end
