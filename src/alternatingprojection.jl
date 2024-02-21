@@ -1,19 +1,16 @@
 """
-    AlternatingProjection(; maxiter=100, tol=1e-7)
+    AlternatingProjection(; maxiter=100, tol=1e-6)
 
 The alternating projections algorithm developed by Nick Higham.
 """
 Base.@kwdef struct AlternatingProjection <: NearestCorrelationAlgorithm
     maxiter::Int = 100
-    tol::Float64 = 1e-7
+    tol::Float64 = 1e-6
 end
 
 
-"""
-    _project_psd(A::AbstractMatrix{T}) where {T<:AbstractFloat}
 
-Project onto the positive semidefinite matrices.
-"""
+# Project onto the positive semidefinite matrices.
 function _project_psd(A::AbstractMatrix{T}) where {T<:AbstractFloat}
     λ, Q = eigen(Symmetric(A))
     return Q * Diagonal(max.(λ, zero(T))) * Q'
@@ -25,8 +22,6 @@ function _project_psd(A::AbstractMatrix{Float16})
     λ, Q = eigen(A)
     return Q * Diagonal(max.(λ, zero(Float16))) * Q'
 end
-
-
 
 
 function _project_symmetric(A::AbstractMatrix{T}, W::Diagonal{T, Vector{T}}) where {T<:AbstractFloat}
@@ -42,8 +37,9 @@ function _project_unitdiag(X::AbstractMatrix{T}) where {T<:AbstractFloat}
 end
 
 
-function _nearest_cor!(A::AbstractMatrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
-    n = _prep_matrix!(A)
+function _nearest_cor!(X::AbstractMatrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
+    _prep_matrix!(X)
+    n = size(X, 1)
 
     tol = T(alg.tol)
 
@@ -51,7 +47,7 @@ function _nearest_cor!(A::AbstractMatrix{T}, alg::AlternatingProjection) where {
     Sk = zeros(T, n, n)
     Rk = zeros(T, n, n)
     Xk = zeros(T, n, n)
-    Yk = copy(A)
+    Yk = copy(X)
 
     i = 0
     converged = false
@@ -68,7 +64,7 @@ function _nearest_cor!(A::AbstractMatrix{T}, alg::AlternatingProjection) where {
         i += 1
     end
 
-    A .= Yk
-    _cov2cor!(A)
-    return A
+    X .= Yk
+    _cov2cor!(X)
+    return X
 end
