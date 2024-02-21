@@ -23,7 +23,8 @@ end
 
 
 function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
-    n = _prep_matrix!(R)
+    _prep_matrix!(R)
+    n = size(R, 1)
 
     # Setup
     onehalf    = T(0.5)

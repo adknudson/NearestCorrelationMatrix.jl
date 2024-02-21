@@ -20,7 +20,8 @@ _eigsym_reversed(X::AbstractMatrix{Float64}) = _eigen_reversed(Symmetric(X))
 
 
 function _nearest_cor!(X::AbstractMatrix{T}, alg::DirectProjection) where {T<:AbstractFloat}
-    n = _prep_matrix!(X)
+    _prep_matrix!(X)
+    n = size(X, 1)
     τ  = T(alg.τ)
 
     if τ > zero(T)
