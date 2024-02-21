@@ -1,6 +1,12 @@
 _clampcor(x::Real) = clamp(x, -one(x), one(x))
 
 
+function _is_square(X::AbstractMatrix)
+    m, n = size(X)
+    return m == n
+end
+
+
 function _diagonals_are_one(X::AbstractMatrix{T})  where {T<:Real}
     return all(==(one(T)), diag(X))
 end
@@ -20,12 +26,6 @@ function _is_correlation(X::AbstractMatrix{T}) where {T<:Real}
 end
 
 
-function _is_square(X::AbstractMatrix)
-    m, n = size(X)
-    return m == n
-end
-
-
 function _set_diag!(X::AbstractMatrix{T}, v::T) where T
     _is_square(X) || throw(DimensionMismatch("Matrix must be square."))
     for i in diagind(X)
@@ -35,9 +35,6 @@ function _set_diag!(X::AbstractMatrix{T}, v::T) where T
 end
 
 
-"""
-Copy the upper triangle of a matrix to the lower triangle.
-"""
 function _copytolower!(X::AbstractMatrix{T}) where T
     _is_square(X) || throw(DimensionMismatch("Matrix must be square."))
     nr, nc = size(X)
@@ -55,7 +52,13 @@ _copytolower!(X::Symmetric) = X
 function _cor_constrain!(X::AbstractMatrix{T}) where {T<:Real}
     X .= _clampcor.(X)
     _copytolower!(X)
-    _set_diag!(X, one(eltype(X)))
+    _set_diag!(X, one(T))
+    return X
+end
+
+function _cor_constrain!(X::Symmetric{T}) where {T<:Real}
+    X.data .= _clampcor.(X)
+    _set_diag!(X.data, one(T))
     return X
 end
 
@@ -75,18 +78,18 @@ function _cov2cor!(X::Symmetric)
 end
 
 
-function _prep_matrix!(R::AbstractMatrix{T}) where {T<:Real}
-    _is_square(R) || throw(DimensionMismatch("The input matrix must be square."))
+function _prep_matrix!(X::AbstractMatrix{T}) where {T<:Real}
+    _is_square(X) || throw(DimensionMismatch("The input matrix must be square."))
 
-    if !issymmetric(R)
-        _copytolower!(R)
+    if !issymmetric(X)
+        _copytolower!(X)
     end
 
-    if !_diagonals_are_one(R)
-        _set_diag!(R, one(T))
+    if !_diagonals_are_one(X)
+        _set_diag!(X, one(T))
     end
 
-    return size(R, 1)
+    return X
 end
 
 
