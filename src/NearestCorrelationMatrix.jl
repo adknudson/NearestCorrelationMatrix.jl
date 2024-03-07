@@ -1,11 +1,10 @@
 module NearestCorrelationMatrix
 
-include("Utils/Utils.jl")
-using .Utils
+include("submodules/Internals.jl")
+using .Internals
 
 
-using LinearAlgebra: diag, diagm, diagind, dot, eigen, issymmetric, isposdef, norm
-using LinearAlgebra: Diagonal, Symmetric
+using LinearAlgebra
 using PrecompileTools
 
 

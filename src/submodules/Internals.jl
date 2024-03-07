@@ -1,4 +1,4 @@
-module Utils
+module Internals
 
 using LinearAlgebra
 
@@ -8,6 +8,7 @@ export
     require_square,
     diagonals_are_one,
     constrained_to_pm_one,
+    ispossemidef,
     isprecorrelation,
     iscorrelation,
     clampcor,
@@ -22,7 +23,8 @@ export
     checkmat!,
     eigen_safe,
     project_psd,
-    project_psd!
+    project_psd!,
+    force_pd!
 
 
 
@@ -46,6 +48,13 @@ end
 function constrained_to_pm_one(X::AbstractMatrix{T}) where {T<:Real}
     return all(x -> -one(T) ≤ x ≤ one(T), X)
 end
+
+
+function ispossemidef(X)
+    λ = eigvals(X)
+    return all(≥(0), λ)
+end
+
 
 """
     isprecorrelation(X)
@@ -82,7 +91,7 @@ A correlation matrix must:
 - be positive definite
 """
 function iscorrelation(X::AbstractMatrix{T}) where {T<:Real}
-    return isprecorrelation(X) && isposdef(X)
+    return isprecorrelation(X) && ispossemidef(X)
 end
 
 
@@ -112,6 +121,7 @@ function setdiag!(X::AbstractMatrix{T}, v::T) where {T}
 
     return X
 end
+
 
 
 function char_uplo(uplo::Symbol)
@@ -221,6 +231,8 @@ function cov2cor!(X::Symmetric{T}) where {T<:Real}
     return X
 end
 
+
+
 cor2cov(C::AbstractMatrix{T}, s::AbstractVector{T}) where {T<:Real} = cor2cov!(copy(C), s)
 
 function cor2cov!(C::AbstractMatrix{T}, s::AbstractVector{T}) where {T<:Real}
@@ -303,7 +315,11 @@ Project `X` onto the cone of positive semi-definite matrices. This will modify `
 - `λ` is a vector of the eigenvalues of `X` sorted in descending order
 - `P` are the corresponding eigenvectors to `λ`
 """
-function project_psd!(X::AbstractMatrix{T}, λ::AbstractVector{T}, P::AbstractMatrix{T}) where {T}
+function project_psd!(
+    X::AbstractMatrix{T},
+    λ::AbstractVector{T},
+    P::AbstractMatrix{T}
+) where {T}
 	n = length(λ)
 	r = count(>(0), λ)
 
@@ -321,6 +337,7 @@ function project_psd!(X::AbstractMatrix{T}, λ::AbstractVector{T}, P::AbstractMa
 		Q = Pr * λr
         mul!(X, Q, Q')
 	else
+        r = count(>(0), λ)
 		Ps = @view P[:, r+1:end]
 		λs = sqrt(Diagonal(-λ[r+1:end]))
 		Q = Ps * λs
@@ -334,6 +351,8 @@ end
     project_psd!(X)
 
 Project `X` onto the cone of positive semi-definite matrices. This will modify `X` in place.
+
+- `X` is the input matrix
 """
 function project_psd!(X::AbstractMatrix{T}) where {T<:Real}
     λ, P = eigen_safe(X)
@@ -351,8 +370,10 @@ end
     project_psd(X)
 
 The projection of `X` onto the cone of positive semi-definite matrices.
+
+- `X` is the input matrix
 """
-project_psd(X) = project_psd!(copy(X))
+project_psd(X::AbstractMatrix{T}) where {T<:Real} = project_psd!(copy(X))
 
 """
     project_psd(X, λ, P)
@@ -363,8 +384,52 @@ The projection of `X` onto the cone of positive semi-definite matrices.
 - `λ` is a vector of the eigenvalues of `X` sorted in descending order
 - `P` are the corresponding eigenvectors to `λ`
 """
-function project_psd(X::AbstractMatrix{T}, λ::AbstractVector{T}, P::AbstractMatrix{T}) where {T<:Real}
+function project_psd(
+    X::AbstractMatrix{T},
+    λ::AbstractVector{T},
+    P::AbstractMatrix{T}
+) where {T<:Real}
     return project_psd!(copy(X), λ, P)
+end
+
+
+
+"""
+    force_pd!(X, ϵ)
+
+Force a matrix to be positive definite by replacing all eigenvalues below a threshold with
+a small positve value.
+
+- `X` is the input matrix
+- `ϵ` is the threshold for the eigenvalues
+"""
+function force_pd!(X::AbstractMatrix{T}, ϵ::T=eps(T)) where {T<:Real}
+    λ, P = eigen_safe(X)
+    return force_pd!(X, λ, P, ϵ)
+end
+
+"""
+    force_pd!(X, λ, P, ϵ)
+
+Force a matrix to be positive definite by replacing all eigenvalues below a threshold with
+a small positve value.
+
+- `X` is the input matrix
+- `λ` is a vector of the eigenvalues of `X` sorted in descending order
+- `P` are the corresponding eigenvectors to `λ`
+- `ϵ` is the threshold for the eigenvalues
+"""
+function force_pd!(
+    X::AbstractMatrix{T},
+    λ::AbstractVector{T},
+    P::AbstractMatrix{T},
+    ϵ::T=eps(T)
+) where {T<:Real}
+    ϵ = max(ϵ, eps(T))
+    D = Diagonal(max.(λ, ϵ))
+    X .= P * D * P'
+    symmetric!(X)
+    return X
 end
 
 end
