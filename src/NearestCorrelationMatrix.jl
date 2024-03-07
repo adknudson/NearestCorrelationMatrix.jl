@@ -1,5 +1,9 @@
 module NearestCorrelationMatrix
 
+include("Utils/Utils.jl")
+using .Utils
+
+
 using LinearAlgebra: diag, diagm, diagind, dot, eigen, issymmetric, isposdef, norm
 using LinearAlgebra: Diagonal, Symmetric
 using PrecompileTools
@@ -30,8 +34,10 @@ export
     default_alg
 
 
-include("common.jl")
+# algorithm iterface
 include("nearestcor.jl")
+
+# algorithms
 include("newton.jl")
 include("alternatingprojection.jl")
 include("directprojection.jl")
@@ -40,8 +46,8 @@ include("directprojection.jl")
 @setup_workload begin
     function make_data(T, n)
         x = 2 * rand(T, n, n) .- one(T)
-        _set_diag!(x, one(T))
-        _copytolower!(x)
+        setdiag!(x, one(T))
+        symmetric!(x)
         return x
     end
 
