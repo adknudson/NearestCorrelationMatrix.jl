@@ -1,6 +1,6 @@
 using Test
 using NearestCorrelationMatrix
-using NearestCorrelationMatrix: _is_correlation
+using NearestCorrelationMatrix.Utils;
 
 
 function test_alg(alg, msg)
@@ -12,19 +12,32 @@ function test_alg(alg, msg)
     ]
 
     @testset "$msg" begin
-        for T in (Float64, Float32)
-            r = T.(r_negdef)
-            @test_nowarn nearest_cor!(r, alg)
-            @test eltype(r) === T
-            @test _is_correlation(r) == true
+        @testset "In-place" begin
+            for T in (Float64, Float32)
+                r = convert(AbstractMatrix{T}, r_negdef)
+                rcopy = copy(r)
 
-            r = T.(r_negdef)
-            @test_nowarn nearest_cor(r, alg)
-            p = nearest_cor(r, alg)
-            @test eltype(p) === T
-            @test p != r
-            @test _is_correlation(p) == true
-            @test _is_correlation(r) == false
+                @test_nowarn nearest_cor!(r, alg)
+                @test eltype(r) === T
+                @test r != rcopy
+                @test iscorrelation(r) == true
+                @test iscorrelation(rcopy) == false
+            end
+        end
+
+        @testset "Out-of-place" begin
+            for T in (Float64, Float32)
+                r = convert(AbstractMatrix{T}, r_negdef)
+
+                @test_nowarn nearest_cor(r, alg)
+
+                p = nearest_cor(r, alg)
+
+                @test eltype(p) === T
+                @test p != r
+                @test iscorrelation(p) == true
+                @test iscorrelation(r) == false
+            end
         end
     end
 end
