@@ -1,7 +1,7 @@
 """
-    nearest_cor!(R::AbstractMatrix{<:AbstractFloat}, alg::NearestCorrelationAlgorithm)
+    nearest_cor!(A, alg; kwargs...)
 
-Return the nearest positive definite correlation matrix to `R`. This method updates `R` in place.
+Return the nearest positive definite correlation matrix to `A`. This method updates `A` in place.
 
 # Examples
 
@@ -29,39 +29,19 @@ julia> isposdef(r)
 true
 ```
 """
-function nearest_cor! end
-
-nearest_cor!(X::AbstractMatrix{Float64}, alg::NearestCorrelationAlgorithm) = _nearest_cor!(X, alg)
-nearest_cor!(X::AbstractMatrix{Float32}, alg::NearestCorrelationAlgorithm) = _nearest_cor!(X, alg)
-
-function nearest_cor!(X::AbstractMatrix{Float16}, alg::NearestCorrelationAlgorithm)
-    @warn "Float16s are converted to Float32s before computing the nearest correlation." maxlog=1
-
-    R = Float32.(X)
-    nearest_cor!(R, alg)
-    X .= Float16.(R)
-
-    return X
+function nearest_cor!(A::AbstractMatrix, alg::NearestCorrelationAlgorithm; kwargs...)
+    checkmat!(A)
+    return ncm!(A, alg; kwargs...)
 end
 
-function nearest_cor!(X::AbstractMatrix{BigFloat}, alg::NearestCorrelationAlgorithm)
-    @warn "BigFloats are not fully supported by LinearAlgebra. Converting to Float64s." maxlog=1
-
-    R = Float64.(X)
-    nearest_cor!(R, alg)
-    X .= BigFloat.(R)
-
-    return X
-end
-
-nearest_cor!(X) = nearest_cor!(X, default_alg())
+nearest_cor!(A; kwargs...) = nearest_cor!(A, default_alg(); kwargs...)
 
 
 
 """
-    nearest_cor(R::AbstractMatrix{<:AbstractFloat}, alg::NearestCorrelationAlgorithm)
+    nearest_cor(A, alg; kwargs...)
 
-Return the nearest positive definite correlation matrix to `R`.
+Return the nearest positive definite correlation matrix to `A`.
 
 # Examples
 
@@ -89,7 +69,8 @@ julia> isposdef(p)
 true
 ```
 """
-function nearest_cor end
+function nearest_cor(A::AbstractMatrix, alg::NearestCorrelationAlgorithm; kwargs...)
+    return nearest_cor!(copy(A), alg; kwargs...)
+end
 
-nearest_cor(X, alg::NearestCorrelationAlgorithm) = nearest_cor!(copy(X), alg)
-nearest_cor(X) = nearest_cor(X, default_alg())
+nearest_cor(A; kwargs...) = nearest_cor(A, default_alg(); kwargs...)

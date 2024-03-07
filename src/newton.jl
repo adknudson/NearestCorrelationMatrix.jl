@@ -22,7 +22,7 @@ end
 
 
 
-function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
+function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
     checkmat!(R)
     n = size(R, 1)
 

@@ -12,7 +12,7 @@ Base.@kwdef struct DirectProjection <: NearestCorrelationAlgorithm
 end
 
 
-function _nearest_cor!(X::AbstractMatrix{T}, alg::DirectProjection) where {T<:AbstractFloat}
+function ncm!(X::AbstractMatrix{T}, alg::DirectProjection) where {T<:AbstractFloat}
     checkmat!(X)
     tau = max(T(alg.τ), eps(T))
     X[diagind(X)] .-= tau
