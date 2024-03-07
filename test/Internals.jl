@@ -1,6 +1,6 @@
 using Test
-using LinearAlgebra: diag, issymmetric, Symmetric, Diagonal
-using NearestCorrelationMatrix.Utils
+using LinearAlgebra
+using NearestCorrelationMatrix.Internals
 
 
 r_negdef = [
@@ -14,27 +14,25 @@ r_negdef = [
 supported_types = (Float64, Float32, Float16)
 
 
-function test_isprecorrelation(X)
-    @test issquare(X)
-    @test issymmetric(X)
-    @test diagonals_are_one(X)
-    @test constrained_to_pm_one(X)
-end
-
-
 @testset "Internal Utilities" begin
     @testset "Matrix Properties" begin
         for T in supported_types
-            sqr_mat = rand(T, 3, 3)
-            rect_mat = rand(T, 3, 5)
-
-            @test_nowarn issquare(sqr_mat)
+            sqr_mat = 2 * rand(T, 10, 10) .- one(T)
+            rect_mat = 2 * rand(T, 10, 7) .- one(T)
             @test issquare(sqr_mat) == true
             @test issquare(rect_mat) == false
 
-            r = convert(AbstractMatrix{T}, r_negdef)
-            @test_nowarn iscorrelation(sqr_mat)
+
+            x = T[one(T) T(0.3); T(0.3) one(T)]
+            y = T[nextfloat(one(T)) T(0.3); T(0.3) one(T)]
+            @test diagonals_are_one(x) == true
+            @test diagonals_are_one(y) == false
+
+
+            r = convert(AbstractMatrix{T}, copy(r_negdef))
             @test iscorrelation(r) == false
+            @test iscorrelation(sqr_mat) == false
+            @test iscorrelation(rect_mat) == false
         end
     end
 
@@ -42,42 +40,39 @@ end
     @testset "Out-of-place Methods" begin
         for T in supported_types
             # clampcor
-            x = rand(T)
-            @test_nowarn clampcor(x)
+            x = rand(T) + one(T)
             @test typeof(clampcor(x)) === T
 
 
             # cov2cor
-            x = symmetric!(rand(T, 10, 10))
+            x = convert(AbstractMatrix{T}, copy(r_negdef))
+            cor2cov!(x, T[5, 4, 3, 2])
             sym_mat = Symmetric(copy(x))
 
-            @test isprecorrelation(x) == false
-            @test_nowarn cov2cor(x)
             x = cov2cor(x)
-            test_isprecorrelation(x)
+            @test issymmetric(x)
+            @test diagonals_are_one(x)
+            @test constrained_to_pm_one(x)
 
-            @test isprecorrelation(sym_mat) == false
-            @test_nowarn cov2cor(sym_mat)
             sym_mat = cov2cor(sym_mat)
-            test_isprecorrelation(sym_mat)
+            @test issymmetric(sym_mat)
+            @test diagonals_are_one(sym_mat)
+            @test constrained_to_pm_one(sym_mat)
 
 
             # eigen_safe
-            x = symmetric!(rand(T, 10, 10))
+            x = symmetric!(2 * rand(T, 10, 10) .- one(T))
             sym_mat = Symmetric(x)
 
-            @test_nowarn eigen_safe(x)
             λ, P = eigen_safe(x)
             @test eltype(λ) === T
             @test eltype(P) === T
 
-            @test_nowarn eigen_safe(sym_mat)
             λ, P = eigen_safe(sym_mat)
             @test eltype(λ) === T
             @test eltype(P) === T
 
-            x = 2 * rand(T, 10, 10) .- 1
-            @test issymmetric(x) == false
+            x = 2 * rand(T, 10, 10) .- one(T)
             @test_throws Exception eigen_safe(x)
         end
     end
@@ -87,39 +82,48 @@ end
         for T in supported_types
             # clampcor!
             x = T[-2 1; -1 3]
-            @test_nowarn clampcor!(x)
+            clampcor!(x)
             @test all(-one(T) .≤ x .≤ one(T))
 
 
             # setdiag!
-            x = rand(T, 4, 4)
-            @test_nowarn setdiag!(x, one(T))
+            x = 2 * rand(T, 10, 10) .- one(T)
+            sym_mat = Symmetric(2 * rand(T, 10, 10) .- one(T))
+            rect_mat = 2 * rand(T, 10, 7) .- one(T)
+
+            setdiag!(x, one(T))
             @test all(==(one(T)), diag(x))
+
+            setdiag!(sym_mat, one(T))
+            @test all(==(one(T)), diag(sym_mat))
+
             @test_throws Exception setdiag!(x, 3//4)
-            rect_mat = rand(T, 3, 4)
             @test_throws Exception setdiag!(rect_mat, one(T))
 
 
             # symmetric!
             for uplo in (:U, :L)
-                x = rand(T, 4, 4)
-                @test issymmetric(x) == false
-                @test_nowarn symmetric!(x, uplo)
-                @test issymmetric(x) == true
+                x = 2 * rand(T, 10, 10) .- one(T)
+                if !issymmetric(x)
+                    symmetric!(x, uplo)
+                    @test issymmetric(x) == true
+                else
+                    error("Test matrix expected to be non-symmetric. Try re-running the tests.")
+                end
 
-                rect_mat = rand(T, 3, 4)
+                rect_mat = 2 * rand(T, 10, 7) .- one(T)
                 @test_throws Exception symmetric!(rect_mat, uplo)
             end
 
-            x = rand(T, 4, 4)
-            @test_throws Exception symmetric!(x, :u)
+            x = 2 * rand(T, 10, 10) .- one(T)
+            @test_throws ArgumentError symmetric!(x, :u)
 
-            sym_mat = Symmetric(rand(T, 4, 4))
-            @test_nowarn symmetric!(sym_mat)
+            sym_mat = Symmetric(2 * rand(T, 10, 10) .- one(T))
+            symmetric!(sym_mat)
             @test sym_mat isa Symmetric
 
             diag_mat = Diagonal(rand(T, 4))
-            @test_nowarn symmetric!(sym_mat)
+            symmetric!(sym_mat)
             @test diag_mat isa Diagonal
 
 
@@ -132,57 +136,59 @@ end
             sym_mat = Symmetric(copy(x))
             diag_mat = Diagonal(diag(x))
 
-            @test isprecorrelation(x) == false
-            @test_nowarn corconstrain!(x)
-            test_isprecorrelation(x)
+            corconstrain!(x)
+            @test diagonals_are_one(x)
+            @test constrained_to_pm_one(x)
 
-            @test isprecorrelation(sym_mat) == false
-            @test_nowarn corconstrain!(sym_mat)
-            test_isprecorrelation(sym_mat)
+            corconstrain!(sym_mat)
+            @test diagonals_are_one(sym_mat)
+            @test constrained_to_pm_one(sym_mat)
 
-            @test isprecorrelation(diag_mat) == false
-            @test_nowarn corconstrain!(diag_mat)
-            test_isprecorrelation(diag_mat)
+            corconstrain!(diag_mat)
+            @test diagonals_are_one(diag_mat)
+            @test constrained_to_pm_one(diag_mat)
 
 
             # cov2cor!
-            x = convert(AbstractMatrix{T}, r_negdef)
+            x = convert(AbstractMatrix{T}, copy(r_negdef))
             cor2cov!(x, T[5, 4, 3, 2])
             sym_mat = Symmetric(copy(x))
 
-            @test isprecorrelation(x) == false
-            @test_nowarn cov2cor!(x)
-            test_isprecorrelation(x)
+            cov2cor!(x)
+            @test issymmetric(x)
+            @test diagonals_are_one(x)
+            @test constrained_to_pm_one(x)
 
-            @test isprecorrelation(sym_mat) == false
-            @test_nowarn cov2cor!(sym_mat)
-            test_isprecorrelation(sym_mat)
+            cov2cor!(sym_mat)
+            @test issymmetric(sym_mat)
+            @test diagonals_are_one(sym_mat)
+            @test constrained_to_pm_one(sym_mat)
 
 
             # checkmat!
-            x = rand(T, 4, 4)
-            @test issymmetric(x) == false
+            x = 2 * rand(T, 10, 10) .- one(T)
             @test_nowarn checkmat!(x; warn=false)
             @test issymmetric(x) == true
 
-            x = rand(T, 4, 4)
-            @test issymmetric(x) == false
+            x = 2 * rand(T, 10, 10) .- one(T)
             @test_warn "The input matrix is not symmetric. Replacing with (X + X') / 2" checkmat!(x; warn=true)
 
-            x = rand(T, 4, 5)
+            x = 2 * rand(T, 10, 9) .- one(T)
             @test_throws Exception checkmat!(x)
 
 
             # project_psd!
-            x = symmetric!(rand(T, 4, 4))
-            @test issymmetric(x) == true
+            x = symmetric!(2 * rand(T, 10, 10) .- one(T))
             @test_nowarn project_psd!(x)
 
-            x = rand(T, 4, 4)
-            @test issymmetric(x) == false
-            @test_throws Exception project_psd!(x)
+            x = 2 * rand(T, 10, 10) .- one(T)
+            if eltype(eigen(x)) <: Complex
+                @test_throws Exception project_psd!(x)
+            else
+                error("Test matrix expected to produce complex eigenvalues. Try running the tests again.")
+            end
 
-            x = Symmetric(rand(T, 4, 4))
+            x = Symmetric(2 * rand(T, 10, 10) .- one(T))
             @test_nowarn project_psd!(x)
         end
     end

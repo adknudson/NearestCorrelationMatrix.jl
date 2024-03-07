@@ -1,6 +1,16 @@
 using Test
+using LinearAlgebra: issymmetric
 using NearestCorrelationMatrix
-using NearestCorrelationMatrix.Utils;
+using NearestCorrelationMatrix.Internals;
+
+
+function test_iscorrelation(X)
+    @test issquare(X)
+    @test issymmetric(X)
+    @test diagonals_are_one(X)
+    @test constrained_to_pm_one(X)
+    @test ispossemidef(X)
+end
 
 
 function test_alg(alg, msg)
@@ -14,29 +24,30 @@ function test_alg(alg, msg)
     @testset "$msg" begin
         @testset "In-place" begin
             for T in (Float64, Float32)
-                r = convert(AbstractMatrix{T}, r_negdef)
-                rcopy = copy(r)
+                rcopy = convert(AbstractMatrix{T}, copy(r_negdef))
+                p = copy(rcopy)
 
-                @test_nowarn nearest_cor!(r, alg)
-                @test eltype(r) === T
-                @test r != rcopy
-                @test iscorrelation(r) == true
+                @test_nowarn nearest_cor!(p, alg)
+
+                @test eltype(p) === T
+                @test p != rcopy
                 @test iscorrelation(rcopy) == false
+                test_iscorrelation(p)
             end
         end
 
         @testset "Out-of-place" begin
             for T in (Float64, Float32)
-                r = convert(AbstractMatrix{T}, r_negdef)
+                rcopy = convert(AbstractMatrix{T}, copy(r_negdef))
 
-                @test_nowarn nearest_cor(r, alg)
+                @test_nowarn nearest_cor(rcopy, alg)
 
-                p = nearest_cor(r, alg)
+                p = nearest_cor(rcopy, alg)
 
                 @test eltype(p) === T
-                @test p != r
-                @test iscorrelation(p) == true
-                @test iscorrelation(r) == false
+                @test p != rcopy
+                @test iscorrelation(rcopy) == false
+                test_iscorrelation(p)
             end
         end
     end
