@@ -5,52 +5,74 @@ The alternating projections algorithm developed by Nick Higham.
 """
 Base.@kwdef struct AlternatingProjection <: NearestCorrelationAlgorithm
     maxiter::Int = 100
-    tol::Real = 1e-6
+    tol::Real = 1e-8
 end
 
 
-function _nearest_cor!(X::AbstractMatrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
-    checkmat!(X)
-    n = size(X, 1)
+function ncm!(A::AbstractMatrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
+    checkmat!(A)
+    n = size(A, 1)
 
-    tol = T(alg.tol)
+    tol = max(T(alg.tol), eps(T))
 
     W = Diagonal(ones(T, n))
-    Sk = zeros(T, n, n)
-    Rk = zeros(T, n, n)
-    Xk = zeros(T, n, n)
-    Yk = copy(X)
+    Whalf = sqrt(W)
+    Whalfinv = inv(Whalf)
+
+    ΔS = zeros(T, n, n)
+    Y = copy(A)
+    X = similar(A)
+    R = similar(A)
+
+    Xold = similar(X)
+    Yold = similar(Y)
 
     i = 0
     converged = false
-    conv = typemax(T)
 
     while i < alg.maxiter && !converged
-        Rk .= Yk - Sk
-        Xk .= _project_symmetric(Rk, W)
-        Sk .= Xk - Rk
-        Yk .= _project_unitdiag(Xk)
+        Xold .= X
+        Yold .= Y
 
-        conv = norm(Yk - Xk) / norm(Yk)
-        converged = conv ≤ tol && isposdef(Yk)
+        R .= Y - ΔS
+        X .= _project_s(R, Whalf, Whalfinv)
+        ΔS .= X - R
+        Y .= _project_u(X)
+
+        rel_x = norm(X - Xold, Inf) / norm(X, Inf)
+        rel_y = norm(Y - Yold, Inf) / norm(Y, Inf)
+        rel_yx = norm(Y - X, Inf) / norm(Y, Inf)
+
+        converged = max(rel_x, rel_y, rel_yx) ≤ tol
         i += 1
     end
 
-    X .= Yk
-    cov2cor!(X)
-    return X
+    copyto!(A, Y)
+    force_pd!(A)
+    cov2cor!(A)
+    return A
 end
 
 
 
-function _project_symmetric(A::AbstractMatrix{T}, W::Diagonal{T}) where {T<:AbstractFloat}
-    W05 = sqrt(W)
-    return inv(W05) * project_psd(W05 * A * W05) * inv(W05)
+"""
+Project `X` onto the set of symmetric positive semi-definite matrices with a W-norm.
+"""
+function _project_s(
+    X::AbstractMatrix{T},
+    Whalf::AbstractMatrix{T},
+    Whalfinv::AbstractMatrix{T}
+) where {T<:AbstractFloat}
+    Y = Whalfinv * project_psd(Whalf * X * Whalf) * Whalfinv
+    return Symmetric(Y)
 end
 
 
-function _project_unitdiag(X::AbstractMatrix{T}) where {T<:AbstractFloat}
+"""
+Project X onto the set of symmetric matrices with unit diagonal.
+"""
+function _project_u(X::AbstractMatrix{T}) where {T<:AbstractFloat}
     Y = copy(X)
     setdiag!(Y, one(T))
-    return Y
+    return Symmetric(Y)
 end
