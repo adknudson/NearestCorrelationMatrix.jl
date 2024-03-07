@@ -5,40 +5,12 @@ The alternating projections algorithm developed by Nick Higham.
 """
 Base.@kwdef struct AlternatingProjection <: NearestCorrelationAlgorithm
     maxiter::Int = 100
-    tol::Float64 = 1e-6
-end
-
-
-
-# Project onto the positive semidefinite matrices.
-function _project_psd(A::AbstractMatrix{T}) where {T<:AbstractFloat}
-    λ, Q = eigen(Symmetric(A))
-    return Q * Diagonal(max.(λ, zero(T))) * Q'
-end
-
-# eigen(Symmetric(Matrix{Float16})) returns a decomposition with Float32 eltype
-# eigen(Matrix{Float16}) returns a decomposition with Float16 eltype
-function _project_psd(A::AbstractMatrix{Float16})
-    λ, Q = eigen(A)
-    return Q * Diagonal(max.(λ, zero(Float16))) * Q'
-end
-
-
-function _project_symmetric(A::AbstractMatrix{T}, W::Diagonal{T, Vector{T}}) where {T<:AbstractFloat}
-    W05 = sqrt(W)
-    return inv(W05) * _project_psd(Symmetric(W05 * A * W05)) * inv(W05)
-end
-
-
-function _project_unitdiag(X::AbstractMatrix{T}) where {T<:AbstractFloat}
-    Y = copy(X)
-    Y[diagind(Y)] .= one(T)
-    return Y
+    tol::Real = 1e-6
 end
 
 
 function _nearest_cor!(X::AbstractMatrix{T}, alg::AlternatingProjection) where {T<:AbstractFloat}
-    _prep_matrix!(X)
+    checkmat!(X)
     n = size(X, 1)
 
     tol = T(alg.tol)
@@ -65,6 +37,20 @@ function _nearest_cor!(X::AbstractMatrix{T}, alg::AlternatingProjection) where {
     end
 
     X .= Yk
-    _cov2cor!(X)
+    cov2cor!(X)
     return X
+end
+
+
+
+function _project_symmetric(A::AbstractMatrix{T}, W::Diagonal{T}) where {T<:AbstractFloat}
+    W05 = sqrt(W)
+    return inv(W05) * project_psd(W05 * A * W05) * inv(W05)
+end
+
+
+function _project_unitdiag(X::AbstractMatrix{T}) where {T<:AbstractFloat}
+    Y = copy(X)
+    setdiag!(Y, one(T))
+    return Y
 end

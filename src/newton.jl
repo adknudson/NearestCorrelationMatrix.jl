@@ -23,7 +23,7 @@ end
 
 
 function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
-    _prep_matrix!(R)
+    checkmat!(R)
     n = size(R, 1)
 
     # Setup
@@ -47,7 +47,7 @@ function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloa
     y    = zeros(T, n)
     x₀   = copy(y)
     X    = copy(R)
-    λ, P = _eigen_reversed(Symmetric(X))
+    λ, P = eigen_safe(Symmetric(X))
 
     f₀, Fy = _gradient(y, λ, P, b₀)
     f      = f₀
@@ -77,7 +77,7 @@ function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloa
         slope = dot(Fy - b₀, d)
         y    .= x₀ + d
         X    .= R + diagm(y)
-        λ, P = _eigen_reversed(Symmetric(X))
+        λ, P = eigen_safe(Symmetric(X))
         f, Fy = _gradient(y, λ, P, b₀)
 
         k_inner = 0
@@ -85,7 +85,7 @@ function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloa
             k_inner += 1
             y    .= x₀ + d * onehalf^k_inner
             X    .= R + diagm(y)
-            λ, P = _eigen_reversed(Symmetric(X))
+            λ, P = eigen_safe(Symmetric(X))
             f, Fy = _gradient(y, λ, P, b₀)
         end
 
@@ -104,7 +104,7 @@ function _nearest_cor!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloa
     end
 
     X[diagind(X)] .+= τ
-    _cov2cor!(X)
+    cov2cor!(X)
     copyto!(R, X)
     return R
 end
@@ -156,35 +156,14 @@ function _pca!(
     λ::AbstractVector{T},
     P::AbstractMatrix{T}
 ) where {T<:AbstractFloat}
-    n = length(b)
-    r = sum(>(0), λ)
-    s = n - r
-
-    if r == 0
-        X .= zeros(T, n, n)
-    elseif r == n
-        # do nothing
-    elseif r == 1
-        X .= (λ[1] * λ[1]) * (P[:,1] * transpose(P[:,1]))
-    elseif r ≤ s
-        P₁   = @view P[:, 1:r]
-        λ₁   = sqrt.(λ[1:r])
-        P₁λ₁ = P₁ .* transpose(λ₁) # each row of P₁ times λ₁
-        X   .= P₁λ₁ * transpose(P₁λ₁)
-    else
-        P₂   = @view P[:, (r+1):n]
-        λ₂   = sqrt.(-λ[(r+1):n])
-        P₂λ₂ = P₂ .* transpose(λ₂) # each row of P₂ times λ₂
-        X   .= X .+ P₂λ₂ * transpose(P₂λ₂)
-    end
-
+    project_psd!(X, λ, P)
     d  = diag(X)
     d .= max.(d, b)
     X[diagind(X)] .= d
     d .= sqrt.(b ./ d)
     d₂ = d * transpose(d)
     X .= X .* d₂
-    X
+    return X
 end
 
 
