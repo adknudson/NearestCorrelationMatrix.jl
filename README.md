@@ -65,6 +65,13 @@ The method `nearest_cor` accepts a matrix and a nearest correlation algorithm. T
 
 The default algorithm is the Newton method, which offers a great balance between accuracy and speed. 
 
+## NCM Interface
+
+Those wanting to implement their own solver must define the following:
+
+```julia
+```
+
 ## References
 
 * Qi, H., & Sun, D. (2006). A quadratically convergent Newton method for computing the nearest correlation matrix. SIAM journal on matrix analysis and applications, 28(2), 360-385.

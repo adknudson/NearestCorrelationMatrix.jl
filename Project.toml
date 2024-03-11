@@ -1,13 +1,13 @@
 name = "NearestCorrelationMatrix"
 uuid = "59ddf330-608c-4938-8bc9-a4ee97bbbea6"
 authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
-version = "0.3.0-DEV"
+version = "0.2.3-DEV"
 
 [deps]
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 Aqua = "0.8"

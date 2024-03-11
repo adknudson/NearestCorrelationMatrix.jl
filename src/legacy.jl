@@ -29,12 +29,12 @@ julia> isposdef(r)
 true
 ```
 """
-function nearest_cor!(A::AbstractMatrix, alg::NearestCorrelationAlgorithm; kwargs...)
-    checkmat!(A)
-    return ncm!(A, alg; kwargs...)
+function nearest_cor!(A, alg; kwargs...)
+    sol = solve(NCMProblem(A), alg; alias_A = true, kwargs...)
+    return sol.X
 end
 
-nearest_cor!(A; kwargs...) = nearest_cor!(A, default_alg(); kwargs...)
+nearest_cor!(A; kwargs...) = nearest_cor!(A, nothing; kwargs...)
 
 
 
@@ -69,8 +69,9 @@ julia> isposdef(p)
 true
 ```
 """
-function nearest_cor(A::AbstractMatrix, alg::NearestCorrelationAlgorithm; kwargs...)
-    return nearest_cor!(copy(A), alg; kwargs...)
+function nearest_cor(A, alg; kwargs...)
+    sol = solve(NCMProblem(A), alg; alias_A = false, kwargs...)
+    return sol.X
 end
 
-nearest_cor(A; kwargs...) = nearest_cor(A, default_alg(); kwargs...)
+nearest_cor(A; kwargs...) = nearest_cor(A, nothing; kwargs...)
