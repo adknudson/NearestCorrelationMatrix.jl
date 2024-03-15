@@ -337,7 +337,6 @@ function project_psd!(
 		Q = Pr * λr
         mul!(X, Q, Q')
 	else
-        r = count(>(0), λ)
 		Ps = @view P[:, r+1:end]
 		λs = sqrt(Diagonal(-λ[r+1:end]))
 		Q = Ps * λs
