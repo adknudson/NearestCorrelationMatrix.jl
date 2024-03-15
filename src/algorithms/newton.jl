@@ -116,15 +116,11 @@ end
 
 Return f(yₖ) and ∇f(yₖ) where
 
-```math
-f(y) = \\frac{1}{2} \\Vert (A + diag(y))_+ \\Vert_{F}^{2} - e^{T}y
-```
+f(y) = ½‖(A + diag(y))₊‖² - eᵀy
 
 and
 
-```math
-\\nabla f(y) = Diag((A + diag(y))_+) - e
-```
+∇f(y) = Diag((A + diag(y))₊) - e
 """
 function _gradient(
     y::AbstractVector{T},
