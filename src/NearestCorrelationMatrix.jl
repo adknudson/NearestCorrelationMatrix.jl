@@ -9,6 +9,7 @@ PrecompileTools.@recompile_invalidations begin
 
     using LinearAlgebra
     using CommonSolve: CommonSolve, init, solve, solve!, step!
+    using Tullio
     using UnPack
 end
 
@@ -23,6 +24,7 @@ include("ncm_solution.jl")
 
 include("legacy.jl")
 
+include("algorithms/newton.jl")
 include("algorithms/alternatingprojection.jl")
 include("algorithms/directprojection.jl")
 
@@ -35,6 +37,8 @@ export
     NullParameters,
     init, solve, solve!, step!,
     nearest_cor, nearest_cor!,
-    AlternatingProjections
+    AlternatingProjections,
+    DirectProjection,
+    Newton
 
 end
