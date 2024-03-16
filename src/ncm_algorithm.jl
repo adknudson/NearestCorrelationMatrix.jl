@@ -4,6 +4,10 @@
 abstract type NCMAlgorithm end
 
 
+alg_name(::Type{T}) where {T<:NCMAlgorithm} = (isempty(T.parameters) ? T : T.name.wrapper)
+alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
+
+
 init_cacheval(::NCMAlgorithm, args...) = nothing
 
 
@@ -23,8 +27,16 @@ default_tol(::Type{<:Integer}) = 0
 """
     default_iters(alg, A)
 """
-default_iters(::NCMAlgorithm, ::Any) = 0
+default_iters(alg::NCMAlgorithm, ::Any) = throw_notdefined(default_iters, alg)
 
+
+function throw_notdefined(f, alg)
+    error(
+"""
+The method `$f` is not defined for `$(alg_name(alg))`, but should be. Please define the method and run again.
+"""
+    )
+end
 
 
 """
