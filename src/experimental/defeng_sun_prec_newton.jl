@@ -352,28 +352,3 @@ function newton_cor(
 
     return X
 end
-
-
-
-
-
-r_negdef = [
-    1.00 0.82 0.56 0.44
-    0.82 1.00 0.28 0.85
-    0.56 0.28 1.00 0.22
-    0.44 0.85 0.22 1.00
-]
-
-@time r = newton_cor(r_negdef)
-norm(r - r_negdef)
-
-A = let
-    A = Matrix(Symmetric(2*rand(1000, 1000) .- 1))
-    A[diagind(A)] .= 1
-    A
-end
-
-@time r = newton_cor(A)
-norm(r - A)
-isposdef(r)
-eigen(r)
