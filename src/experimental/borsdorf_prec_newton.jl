@@ -1,35 +1,53 @@
-function preconditioned_newton(
-    R::AbstractMatrix{T};
-    tol=sqrt(eps(T)),
-    linsolve=KrylovJL_MINRES(),
-    linesearch=BackTracking()
-) where {T}
-    A = Symmetric(copy(R))
-    A[diagind(A)] .= one(T)
+struct NewtonBorsdorf{Tlsolve,Tlsearch,A,K} <: NCMAlgorithm
+    linsolve::Tlsolve
+    linsearch::Tlsearch
+    args::A
+    kwargs::K
+end
+
+function NewtonBorsdorf(
+    args...;
+    linsolve=KrylovJL_GMRES(),
+    linsearch=BackTracking(),
+    kwargs...
+)
+    return NewtonBorsdorf(linsolve, linsearch, args, kwargs)
+end
+
+default_iters(::NewtonBorsdorf, A) = max(size(A,1), 10)
+
+
+function CommonSolve.solve!(solver::NCMSolver, alg::NewtonBorsdorf)
+    A = Symmetric(solver.A)
     n = size(A, 1)
+    T = eltype(A)
 
     y = zeros(T, n)
+    W = similar(A)
 
     ∇fy = dual_gradient(y, A)
     cache = nothing
 
-    while norm(∇fy) > tol
-        e = eigen(A + Diagonal(y), sortby=x -> -x)
-        W = weighted_matrix(e.values)
+    iters = 0
 
-        sol = find_step_direction(y, ∇fy, e.vectors, W, linsolve, cache)
-        if isnothing(cache)
-            cache = sol.cache
-        end
+    while norm(∇fy) > solver.reltol && iters < solver.maxiters
+        e = eigen(A + Diagonal(y), sortby=x -> -x)
+        weighted_matrix!(W.data, e.values)
+
+        sol = find_step_direction(y, ∇fy, e.vectors, W, alg.linsolve, cache)
+        cache = sol.cache
         d = sol.u
 
-        a = find_step_size(A, y, d, linesearch)
+        a = find_step_size(A, y, d, alg.linsearch)
         y .+= a.*d
-        ∇fy = dual_gradient(y, A)
+        ∇fy .= dual_gradient(y, A)
+
+        iters += 1
     end
 
-    X = dual_to_primal(y, A)
-    return cov2cor(X)
+    X = cov2cor(dual_to_primal(y, A))
+
+    return build_ncm_solution(alg, X, norm(∇fy), solver; iters=iters)
 end
 
 
@@ -57,17 +75,19 @@ function cov2cor(X::Symmetric)
     return Symmetric(D * X * D)
 end
 
-function weighted_matrix(λ::AbstractVector{T}) where {T}
-    n = length(λ)
+function weighted_matrix!(W::AbstractMatrix, λ::AbstractVector{T}) where {T}
     r = count(>(0), λ)
-    s = n - r
 
     λa = @view λ[begin:r]
     λg = @view λ[r+1:end]
 
     @tullio tau[i,j] := λa[i] / (λa[i] - λg[j])
 
-    return Symmetric([ones(T, r, r) tau; tau' zeros(T, s, s)])
+    fill!(@view(W[begin:r,begin:r]), one(T))
+    fill!(@view(W[r+1:end,r+1:end]), zero(T))
+
+    @view(W[begin:r, r+1:end]) .= tau
+    @view(W[r+1:end, begin:r]) .= tau'
 end
 
 function jacobi_preconditioner(P::AbstractMatrix{T}, W::Symmetric{T}, tol::T) where {T}
@@ -121,39 +141,53 @@ function find_step_direction(
     ∇fy::AbstractVector{T},
     P::AbstractMatrix{T},
     W::Symmetric{T},
-    alg,
-    cache=nothing
-) where {T}
+    ::Talg,
+    cache::Tcache
+) where {T,Talg,Tcache}
     V = make_Vk_op(y, P, W)
     D = jacobi_preconditioner(P, W, 1e-8) |> Diagonal |> sqrt
 
-    if isnothing(cache)
-        prob = LinearProblem(V, -∇fy)
-        cache = init(prob, alg, y; Pl = D, Pr = D)
-    else
-        cache.A = V
-        cache.b = -∇fy
-        cache.Pl = D
-        cache.Pr = D
-    end
+    cache.A = V
+    cache.b = -∇fy
+    cache.Pl = D
+    cache.Pr = D
 
     sol = solve!(cache)
 
     return sol
 end
 
+function find_step_direction(
+    y::AbstractVector{T},
+    ∇fy::AbstractVector{T},
+    P::AbstractMatrix{T},
+    W::Symmetric{T},
+    alg::Talg,
+    ::Nothing
+) where {T,Talg}
+    V = make_Vk_op(y, P, W)
+    D = jacobi_preconditioner(P, W, 1e-8) |> Diagonal |> sqrt
+
+    prob = LinearProblem(V, -∇fy)
+    cache = init(prob, alg, y; Pl = D, Pr = D)
+    sol = solve!(cache)
+
+    return sol
+end
+
+
 struct LSFWrapper{T}
     A::AbstractMatrix{T}
 end
 
-(f::LSFWrapper)(u) = dual_lp(u, f.A)
+(w::LSFWrapper)(u) = dual_lp(u, w.A)
 
 struct LSGWrapper{T}
     A::AbstractMatrix{T}
 end
 
-function (g::LSGWrapper)(du, u)
-    du .= dual_gradient(u, g.A)
+function (w::LSGWrapper)(du, u)
+    du .= dual_gradient(u, w.A)
     return du
 end
 
@@ -161,8 +195,8 @@ struct LSFGWrapper{T}
     A::AbstractMatrix{T}
 end
 
-function (fg::LSFGWrapper)(du, u)
-    C = proj_psd(fg.A + Diagonal(u))
+function (w::LSFGWrapper)(du, u)
+    C = proj_psd(w.A + Diagonal(u))
     fx = norm(C)^2 / 2 - sum(u)
     du .= diag(C) .- 1
     return fx
@@ -177,12 +211,45 @@ function make_linesearch_funcs(A::Symmetric{T}) where {T}
     return (f, g!, fg!)
 end
 
+
+struct LSϕWrapper{Tx, Td}
+    f::LSFWrapper
+    x::Tx
+    d::Td
+end
+
+(w::LSϕWrapper)(a) = w.f(w.x + a * w.d)
+
+struct LSdϕWrapper{Tgvec, Tx, Td}
+    g!::LSGWrapper
+    gvec::Tgvec
+    x::Tx
+    d::Td
+end
+
+function (w::LSdϕWrapper)(a)
+    w.g!(w.gvec, w.x + a * w.d)
+end
+
+struct LSϕdϕWrapper{Tgvec, Tx, Td}
+    fg!::LSFGWrapper
+    gvec::Tgvec
+    x::Tx
+    d::Td
+end
+
+function (w::LSϕdϕWrapper)(a)
+    phi = w.fg!(w.gvec, w.x + a * w.d)
+    dphi = dot(w.gvec, w.d)
+    return (phi, dphi)
+end
+
 function find_step_size(
     A::Symmetric{T},
     y::AbstractVector{T},
     d::AbstractVector{T},
-    linesearch
-) where {T}
+    linesearch::Tls
+) where {T, Tls}
     f, g!, fg! = make_linesearch_funcs(A)
 
     x = copy(y)
@@ -190,20 +257,9 @@ function find_step_size(
     g!(gvec, x)
     fx = f(x)
 
-    function ϕ(a)
-        return f(x .+ a.*d)
-    end
-
-    function dϕ(a)
-        g!(gvec, x .+ a.*d)
-        return dot(gvec, d)
-    end
-
-    function ϕdϕ(a)
-        phi = fg!(gvec, x .+ a.*d)
-        dphi = dot(gvec, d)
-        return (phi, dphi)
-    end
+    ϕ = LSϕWrapper(f, x, d)
+    dϕ = LSdϕWrapper(g!, gvec, x, d)
+    ϕdϕ = LSϕdϕWrapper(fg!, gvec, x, d)
 
     dϕ_0 = dot(d, gvec)
 
