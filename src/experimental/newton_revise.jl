@@ -1,6 +1,127 @@
 # https://www.polyu.edu.hk/ama/profile/dfsun/
 
-using LinearAlgebra, Tullio, BlockArrays
+"""
+    NewtonNew(; tau, tol_cg, tol_ls, iter_cg, iter_ls)
+
+# Parameters
+- `tau`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
+- `tol_cg`: the tolerance used in the conjugate gradient method
+- `tol_ls`: the tolerance used in the line search method
+- `iter_cg`: the max number of iterations in the conjugate gradient method
+- `iter_ls`: the max number of refinements during the Newton step
+"""
+struct NewtonNew{A,K} <: NCMAlgorithm
+    tau::Real
+    tol_cg::Real
+    tol_ls::Real
+    iter_cg::Int
+    iter_ls::Int
+    args::A
+    kwargs::K
+end
+
+function NewtonNew(
+    args...;
+    tau::Real=sqrt(eps()),
+    tol_cg::Real = 1e-2,
+    tol_ls::Real = 1e-4,
+    iter_cg::Int = 200,
+    iter_ls::Int = 20,
+    kwargs...
+)
+    return NewtonNew(tau, tol_cg, tol_ls, iter_cg, iter_ls, args, kwargs)
+end
+
+default_iters(::NewtonNew, A) = size(A,1)
+
+
+function CommonSolve.solve!(solver::NCMSolver, alg::NewtonNew)
+    G = Symmetric(solver.A)
+    n = size(G, 1)
+    T = eltype(G)
+
+    tau = max(alg.tau, zero(T))
+    error_tol = max(eps(T), solver.reltol)
+
+    b = ones(T, n) .- tau
+    G[diagind(G)] .-= tau
+
+    # original diagonal
+    b0 = copy(b)
+    # initial dual solution
+    y = zeros(T, n)
+    # gradient of the dual
+    ∇fy = zeros(T, n)
+    # previous dual solution
+    x0 = copy(y)
+    # diagonal preconditioner
+    v = ones(T, n)
+    # step direction
+    d = zeros(T, n)
+    # initial primal solution
+    X = G + Diagonal(y)
+
+    λ, P = eigen_sym(X)
+    f0 = dual_gradient!(∇fy, y, λ, P, b0)
+    f = f0
+    b .= b0 - ∇fy
+
+    val_G = norm(G)^2 / 2
+    val_dual = val_G - f0
+
+    primal_feasible_solution!(X, λ, P, b0)
+
+    val_primal = norm(X - G)^2 / 2
+    gap = (val_primal - val_dual) / (1 + abs(val_primal) + abs(val_dual))
+
+    norm_b = norm(b)
+    norm_b0 = norm(b0) + 1
+    norm_b_rel = norm_b / norm_b0
+
+    W = omega_matrix(λ)
+
+    k = 0
+    while gap > error_tol && norm_b_rel > error_tol && k < solver.maxiters
+        precondition_matrix!(v, W, P)
+        preconditioned_cg!(d, b, v, W, P, alg.tol_cg, alg.iter_cg)
+
+        slope = dot(∇fy - b0, d)
+        y .= x0 + d
+        X .= G + Diagonal(y)
+        λ, P = eigen_sym(X)
+        f = dual_gradient!(∇fy, y, λ, P, b0)
+
+        m = 0
+        while (m < alg.iter_ls) && (f > f0 + alg.tol_ls * slope / 2^m + 1e-6)
+            m += 1
+            y .= x0 + d / 2^m
+            X .= G + Diagonal(y)
+            λ, P = eigen_sym(X)
+            f = dual_gradient!(∇fy, y, λ, P, b0)
+        end
+
+        x0 .= y
+        f0 = f
+
+        val_dual = val_G - f0
+        primal_feasible_solution!(X, λ, P, b0)
+
+        val_primal = norm(X - G)^2 / 2
+        gap = (val_primal - val_dual) / (1 + abs(val_primal) + abs(val_dual))
+
+        k += 1
+        b .= b0 - ∇fy
+        norm_b = norm(b)
+        norm_b_rel = norm_b / norm_b0
+
+        W = omega_matrix(λ)
+    end
+
+    G[diagind(G)] .+= tau # restore the diagonal of A
+    X[diagind(X)] .+= tau
+
+    return build_ncm_solution(alg, X, gap, solver; iters=k)
+end
 
 
 
@@ -169,17 +290,21 @@ end
 
 
 """
-Generate the diagonal preconditioner, `c`
+Generate the diagonal preconditioner, `v`
 
+- `v`: the diagonal vector to write into
 - `W`: the matrix returned from `omega_matrix`
 - `P`: the eigenvectors of `X`
 """
-function precondition_matrix(W, P)
+function precondition_matrix!(v, W, P)
     T = eltype(P)
     r, s = size(W)
     n = size(P, 1)
 
-    r == 0 || r == n && return ones(T, n)
+    if r == 0 || r == n
+        fill!(v, one(T))
+        return v
+    end
 
     Ω = PseudoBlockMatrix{T}(undef, [r,s], [r,s])
     view(Ω, Block(1,1)) .= one(T)
@@ -190,7 +315,7 @@ function precondition_matrix(W, P)
     Q = P .* P
     M = Ω * Q
 
-    @tullio v[i] := dot(@view(Q[:,i]), @view(M[:,i]))
+    @tullio v[i] = dot(@view(Q[:,i]), @view(M[:,i]))
 
     ϵ = sqrt(eps(T))
     replace!(x -> max(x, ϵ), v)
@@ -200,20 +325,21 @@ end
 
 
 
-
 """
+- `p`: the solution vector to write into
 - `b`: a vector of (1-τ)'s
 - `v`: the diagonal preconditioner
 - `W`: the matrix returned from `omega_matrix`
 - `P`: the eigenvectors of `X`
 """
-function preconditioned_cg(b, v, W, P, tol, maxiter)
+function preconditioned_cg!(p, b, v, W, P, tol, maxiter)
+    T = eltype(p)
     r = copy(b) # initial residual
 
     norm_b = norm(b)
     tol_b = tol * norm_b
 
-    p = zero(b) # final search direction
+    fill!(p, zero(T))
 
     z = r ./ v
     rz1 = dot(r, z)
@@ -252,104 +378,4 @@ function preconditioned_cg(b, v, W, P, tol, maxiter)
     end
 
     return p
-end
-
-
-
-
-function newton_cor(
-    A::AbstractMatrix{T};
-    tau = eps(T),
-    tol = sqrt(eps(T)),
-    maxiter = 200
-) where {T}
-    G = Symmetric(A)
-    n = size(A, 1)
-    tau = max(tau, zero(T))
-    error_tol = max(eps(T), tol)
-
-    b = ones(T, n) .- tau
-    A[diagind(A)] .-= tau
-
-    # original diagonal
-    b0 = copy(b)
-    # initial dual solution
-    y = zeros(T, n)
-    # gradient of the dual
-    ∇fy = zeros(T, n)
-    # previous dual solution
-    x0 = copy(y)
-    # diagonal preconditioner
-    v = ones(T, n)
-    # step direction
-    d = zeros(T, n)
-    # initial primal solution
-    X = G + Diagonal(y)
-
-    λ, P = eigen_sym(X)
-    f0 = dual_gradient!(∇fy, y, λ, P, b0)
-
-    val_G = norm(G)^2 / 2
-    val_dual = val_G - f0
-
-    primal_feasible_solution!(X, λ, P, b0)
-
-    val_primal = norm(X - G)^2 / 2
-    gap = (val_primal - val_dual) / (1 + abs(val_primal) + abs(val_dual))
-
-    f = f0
-    b .= b0 - ∇fy
-
-    norm_b = norm(b)
-    norm_b0 = norm(b0) + 1
-    norm_b_rel = norm_b / norm_b0
-
-    W = omega_matrix(λ)
-
-    k = 0
-    while gap > error_tol && norm_b_rel > error_tol && k < maxiter
-        v .= precondition_matrix(W, P)
-        d .= preconditioned_cg(b, v, W, P, 1e-2, 200)
-
-        slope = dot(∇fy - b0, d)
-        y .= x0 + d
-        X .= G + Diagonal(y)
-        λ, P = eigen_sym(X)
-
-        f = dual_gradient!(∇fy, y, λ, P, b0)
-
-        # begin line search loop
-        m = 0
-        while (m < 20) && (f > f0 + 1e-4 * slope / 2^m + 1e-6)
-            m += 1
-
-            y .= x0 + d / 2^m
-            X .= G + Diagonal(y)
-            λ, P = eigen_sym(X)
-            f = dual_gradient!(∇fy, y, λ, P, b0)
-        end # end line search loop
-
-        x0 .= y
-        f0 = f
-
-        val_dual = val_G - f0
-        primal_feasible_solution!(X, λ, P, b0)
-
-        val_primal = norm(X - G)^2 / 2
-        gap = (val_primal - val_dual) / (1 + abs(val_primal) + abs(val_dual))
-
-        k += 1
-        b .= b0 - ∇fy
-        norm_b = norm(b)
-        norm_b_rel = norm_b / norm_b0
-
-        W = omega_matrix(λ)
-    end
-
-    A[diagind(A)] .+= tau # restore the diagonal of A
-    X[diagind(X)] .+= tau
-
-    @info "Ended after $k iterations"
-
-    return X
 end
