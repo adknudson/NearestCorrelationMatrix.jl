@@ -2,46 +2,54 @@
     Newton(; kwargs...)
 
 # Parameters
-- `τ`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
-- `tol`: the tolerance used as a stopping condition during iterations
+- `tau`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
 - `tol_cg`: the tolerance used in the conjugate gradient method
 - `tol_ls`: the tolerance used in the line search method
-- `iter_outer`: the max number of Newton steps
-- `iter_inner`: the max number of refinements during the Newton step
 - `iter_cg`: the max number of iterations in the conjugate gradient method
+- `iter_ls`: the max number of refinements during the Newton step
 """
-Base.@kwdef struct Newton <: NCMAlgorithm
-    τ::Real = 1e-6
-    tol::Real = 1e-3
-    tol_cg::Real = 1e-2
-    tol_ls::Real = 1e-4
-    iter_outer::Int = 200
-    iter_inner::Int = 20
-    iter_cg::Int = 200
+struct Newton{A,K} <: NCMAlgorithm
+    tau::Real
+    tol_cg::Real
+    tol_ls::Real
+    iter_cg::Int
+    iter_ls::Int
+    args::A
+    kwargs::K
 end
 
+function Newton(
+    args...;
+    tau::Real=sqrt(eps()),
+    tol_cg::Real = 1e-2,
+    tol_ls::Real = 1e-4,
+    iter_cg::Int = 200,
+    iter_ls::Int = 20,
+    kwargs...
+)
+    return Newton(tau, tol_cg, tol_ls, iter_cg, iter_ls, args, kwargs)
+end
+
+default_iters(::Newton, A) = max(size(A,1), 10)
 
 
-function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
-    checkmat!(R)
+function CommonSolve.solve!(solver::NCMSolver, alg::Newton)
+    R = solver.A
     n = size(R, 1)
+    T = eltype(R)
 
     # Setup
-    onehalf    = T(0.5)
-    τ          = T(alg.τ)
-    iter_outer = alg.iter_outer
-    iter_inner = alg.iter_inner
+    tau        = max(alg.tau, 0)
+    tol_cg     = alg.tol_cg
+    tol_ls     = alg.tol_ls
     iter_cg    = alg.iter_cg
-    tol_cg     = T(alg.tol_cg)
-    tol_ls     = T(alg.tol_ls)
-    err_tol    = T(alg.tol)
-    inner_eps  = T(1e-6)
+    iter_ls    = alg.iter_ls
+    err_tol    = solver.reltol
+    inner_eps  = 1e-6
 
     b = ones(T, n)
-    if τ > zero(T)
-        b .-= τ
-        R[diagind(R)] .-= τ
-    end
+    b .-= tau
+    R[diagind(R)] .-= tau
     b₀ = copy(b)
 
     y    = zeros(T, n)
@@ -55,9 +63,9 @@ function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
 
     _pca!(X, b₀, λ, P)
 
-    val_R    = onehalf * norm(R)^2
+    val_R    = norm(R)^2 / 2
     val_dual = val_R - f₀
-    val_obj  = onehalf * norm(X - R)^2
+    val_obj  = norm(X - R)^2 / 2
     gap      = (val_obj - val_dual) / (1 + abs(val_dual) + abs(val_obj))
 
     norm_b  = norm(b)
@@ -68,7 +76,7 @@ function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
     c = zeros(T, n)
     d = zeros(T, n)
 
-    while (gap > err_tol) && (norm_b_rel > err_tol) && (k < iter_outer)
+    while (gap > err_tol) && (norm_b_rel > err_tol) && (k < solver.maxiters)
         Ω₀ = _create_omega_matrix(λ)
 
         _precondition_matrix!(c, Ω₀, P)
@@ -81,9 +89,9 @@ function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
         f, Fy = _gradient(y, λ, P, b₀)
 
         k_inner = 0
-        while (k_inner ≤ iter_inner) && (f > f₀ + tol_ls * slope * onehalf^k_inner + inner_eps)
+        while (k_inner ≤ iter_ls) && (f > f₀ + tol_ls * slope / 2^k_inner + inner_eps)
             k_inner += 1
-            y    .= x₀ + d * onehalf^k_inner
+            y    .= x₀ + d / 2^k_inner
             X    .= R + diagm(y)
             λ, P = eigen_safe(Symmetric(X))
             f, Fy = _gradient(y, λ, P, b₀)
@@ -94,7 +102,7 @@ function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
 
         _pca!(X, b₀, λ, P)
         val_dual = val_R - f₀
-        val_obj  = onehalf * norm(X - R)^2
+        val_obj  = norm(X - R)^2 / 2
         gap      = (val_obj - val_dual) / (1 + abs(val_dual) + abs(val_obj))
         b        = b₀ - Fy
         norm_b   = norm(b)
@@ -103,10 +111,10 @@ function ncm!(R::AbstractMatrix{T}, alg::Newton) where {T<:AbstractFloat}
         k += 1
     end
 
-    X[diagind(X)] .+= τ
+    X[diagind(X)] .+= tau
     cov2cor!(X)
-    copyto!(R, X)
-    return R
+
+    return build_ncm_solution(alg, X, gap, solver; iters=k)
 end
 
 
