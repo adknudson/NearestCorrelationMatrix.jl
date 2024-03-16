@@ -131,14 +131,21 @@ Generate the Jacobian product with `d`:
 - `W`: the matrix returned from `omega_matrix`
 - `P`: the eigenvectors of `X`
 """
-function jacobian_matrix(d, W, P)
+function jacobian_matrix!(Vd, d, W, P)
+    T = eltype(Vd)
     n = length(d)
     r, s = size(W)
 
-    Vd = zeros(eltype(d), n)
 
-    r == 0 && return Vd
-    r == n && return (1 + perturb(d)) * d
+    if r == n
+        Vd .= (1 + perturb(d)) * d
+        return Vd
+    end
+
+    if r == 0
+        fill!(Vd, zero(T))
+        return Vd
+    end
 
     Pr = @view P[:, begin:r]
     Ps = @view P[:, r+1:end]
@@ -212,6 +219,7 @@ function preconditioned_cg(b, v, W, P, tol, maxiter)
     rz1 = dot(r, z)
     rz2 = one(rz1)
     d = copy(z)
+    w = similar(d)
 
     k = 0
 
@@ -221,7 +229,7 @@ function preconditioned_cg(b, v, W, P, tol, maxiter)
             d .= z + β * d
         end
 
-        w = jacobian_matrix(d, W, P)
+        jacobian_matrix!(w, d, W, P)
         den = dot(d, w)
 
         if den ≤ 0
@@ -249,11 +257,11 @@ end
 
 
 
-function nearest_cor(
+function newton_cor(
     A::AbstractMatrix{T},
+    tau=zero(T);
+    tol=sqrt(eps(T)),
     b=ones(T, size(A, 1)),
-    tau=zero(T),
-    tol=sqrt(eps(T));
     maxiter=200
 ) where {T}
     G = Symmetric(A)
@@ -356,4 +364,16 @@ r_negdef = [
     0.44 0.85 0.22 1.00
 ]
 
-@time r = nearest_cor(copy(r_negdef))
+@time r = newton_cor(r_negdef)
+norm(r - r_negdef)
+
+A = let
+    A = Matrix(Symmetric(2*rand(1000, 1000) .- 1))
+    A[diagind(A)] .= 1
+    A
+end
+
+@time r = newton_cor(A)
+norm(r - A)
+isposdef(r)
+eigen(r)
