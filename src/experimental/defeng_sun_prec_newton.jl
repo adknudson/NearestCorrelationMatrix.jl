@@ -258,20 +258,18 @@ end
 
 
 function newton_cor(
-    A::AbstractMatrix{T},
-    tau=zero(T);
-    tol=sqrt(eps(T)),
-    b=ones(T, size(A, 1)),
-    maxiter=200
+    A::AbstractMatrix{T};
+    tau = eps(T),
+    tol = sqrt(eps(T)),
+    maxiter = 200
 ) where {T}
     G = Symmetric(A)
     n = size(A, 1)
+    tau = max(tau, zero(T))
     error_tol = max(eps(T), tol)
 
-    if tau > 0
-        b .-= tau
-        A[diagind(A)] .-= tau
-    end
+    b = ones(T, n) .- tau
+    A[diagind(A)] .-= tau
 
     # original diagonal
     b0 = copy(b)
@@ -343,12 +341,15 @@ function newton_cor(
         k += 1
         b .= b0 - ∇fy
         norm_b = norm(b)
-        norm_b_rel <- norm_b / norm_b0
+        norm_b_rel = norm_b / norm_b0
 
         W = omega_matrix(λ)
     end
 
+    A[diagind(A)] .+= tau # restore the diagonal of A
     X[diagind(X)] .+= tau
+
+    @info "Ended after $k iterations"
 
     return X
 end
