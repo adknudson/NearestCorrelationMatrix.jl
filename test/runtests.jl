@@ -2,7 +2,8 @@ using Test, Aqua
 
 
 include("Internals.jl")
-include("PublicApi.jl")
+
+include("LegacyApi.jl")
 
 
 Aqua.test_all(NearestCorrelationMatrix)
