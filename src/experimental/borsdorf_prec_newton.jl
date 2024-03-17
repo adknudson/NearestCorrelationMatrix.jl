@@ -70,10 +70,14 @@ function dual_to_primal(y::AbstractVector{T}, A::Symmetric{T}) where {T}
     return proj_psd(A + Diagonal(y))
 end
 
+
+
 function cov2cor(X::Symmetric)
     D = inv(sqrt(Diagonal(X)))
     return Symmetric(D * X * D)
 end
+
+
 
 function weighted_matrix!(W::AbstractMatrix, λ::AbstractVector{T}) where {T}
     r = count(>(0), λ)
@@ -85,10 +89,13 @@ function weighted_matrix!(W::AbstractMatrix, λ::AbstractVector{T}) where {T}
 
     fill!(@view(W[begin:r,begin:r]), one(T))
     fill!(@view(W[r+1:end,r+1:end]), zero(T))
-
     @view(W[begin:r, r+1:end]) .= tau
     @view(W[r+1:end, begin:r]) .= tau'
+
+    return W
 end
+
+
 
 function jacobi_preconditioner(P::AbstractMatrix{T}, W::Symmetric{T}, tol::T) where {T}
     n = size(P, 1)
@@ -107,6 +114,8 @@ function jacobi_preconditioner(P::AbstractMatrix{T}, W::Symmetric{T}, tol::T) wh
     return v
 end
 
+
+
 function generalized_jacobian(
     h::AbstractVector{T},
     P::AbstractMatrix{T},
@@ -114,6 +123,8 @@ function generalized_jacobian(
 ) where {T}
     return diag(P * (W .* (P' * Diagonal(h) * P)) * P')
 end
+
+
 
 struct VkWrapper{T}
     P::AbstractMatrix{T}
@@ -135,6 +146,8 @@ function make_Vk_op(y, P, W)
         isposdef=true,
     )
 end
+
+
 
 function find_step_direction(
     y::AbstractVector{T},
@@ -176,6 +189,7 @@ function find_step_direction(
 end
 
 
+
 struct LSFWrapper{T}
     A::AbstractMatrix{T}
 end
@@ -201,16 +215,6 @@ function (w::LSFGWrapper)(du, u)
     du .= diag(C) .- 1
     return fx
 end
-
-
-function make_linesearch_funcs(A::Symmetric{T}) where {T}
-    f   = LSFWrapper(A)
-    g!  = LSGWrapper(A)
-    fg! = LSFGWrapper(A)
-
-    return (f, g!, fg!)
-end
-
 
 struct LSϕWrapper{Tx, Td}
     f::LSFWrapper
@@ -250,7 +254,9 @@ function find_step_size(
     d::AbstractVector{T},
     linesearch::Tls
 ) where {T, Tls}
-    f, g!, fg! = make_linesearch_funcs(A)
+    f = LSFWrapper(A)
+    g! = LSGWrapper(A)
+    fg! = LSFGWrapper(A)
 
     x = copy(y)
     gvec = similar(x)
