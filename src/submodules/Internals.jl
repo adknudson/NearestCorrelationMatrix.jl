@@ -50,10 +50,7 @@ function constrained_to_pm_one(X::AbstractMatrix{T}) where {T<:Real}
 end
 
 
-function ispossemidef(X)
-    λ = eigvals(X)
-    return all(≥(0), λ)
-end
+ispossemidef(X, ϵ=-sqrt(eps(eltype(X)))) = eigmin(X) ≥ ϵ
 
 
 """
