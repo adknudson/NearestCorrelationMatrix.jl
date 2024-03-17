@@ -31,7 +31,12 @@ true
 """
 function nearest_cor!(A, alg; kwargs...)
     sol = solve(NCMProblem(A), alg; alias_A = true, kwargs...)
-    return sol.X
+
+    if !modifies_in_place(alg)
+        copyto!(A, sol.X)
+    end
+
+    return A
 end
 
 nearest_cor!(A; kwargs...) = nearest_cor!(A, nothing; kwargs...)
