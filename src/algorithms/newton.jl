@@ -136,16 +136,6 @@ function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
 end
 
 
-eigen_sym(X::AbstractMatrix{T}) where {T<:Real} = eigen(Symmetric(X), sortby=x->-x)
-eigen_sym(X::Symmetric{T})      where {T<:Real} = eigen(X,            sortby=x->-x)
-
-function eigen_sym(X::Symmetric{Float16})
-    E = eigen(X, sortby=x->-x)
-    values = convert(AbstractVector{Float16}, E.values)
-    vectors = convert(AbstractMatrix{Float16}, E.vectors)
-    return Eigen(values, vectors)
-end
-
 
 """
 Compute
