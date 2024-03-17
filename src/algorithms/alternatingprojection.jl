@@ -50,12 +50,10 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
         i += 1
     end
 
-    force_pd!(solver.A, 2eps(T))
     cov2cor!(solver.A)
 
     return build_ncm_solution(alg, solver.A, resid, solver; iters=i)
 end
-
 
 
 """

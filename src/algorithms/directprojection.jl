@@ -30,7 +30,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
     tau = max(T(alg.tau), eps(T))
 
     X[diagind(X)] .-= tau
-    project_psd!(X)
+    project_psd!(X, eps(T))
     X[diagind(X)] .+= tau
 
     cov2cor!(X)
