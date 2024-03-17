@@ -7,11 +7,8 @@ PrecompileTools.@recompile_invalidations begin
     include("submodules/Internals.jl")
     using .Internals
 
-    using BlockArrays
     using LinearAlgebra
-    using LinearSolve
-    using LineSearches
-    using CommonSolve: CommonSolve, init, solve, solve!, step!
+    using CommonSolve: CommonSolve, init, solve, solve!
     using Tullio
     using UnPack
 end
@@ -31,8 +28,6 @@ include("algorithms/newton.jl")
 include("algorithms/alternatingprojection.jl")
 include("algorithms/directprojection.jl")
 
-include("experimental/newton_revise.jl")
-include("experimental/borsdorf_prec_newton.jl")
 
 export
     NCMProblem,
@@ -40,12 +35,11 @@ export
     NCMAlgorithm,
     NCMSolution,
     NullParameters,
-    init, solve, solve!, step!,
+    init, solve, solve!,
     nearest_cor, nearest_cor!,
-    AlternatingProjections,
-    DirectProjection,
+    autotune,
     Newton,
-    NewtonNew,
-    NewtonBorsdorf
+    AlternatingProjections,
+    DirectProjection
 
 end
