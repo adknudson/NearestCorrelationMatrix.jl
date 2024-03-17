@@ -14,19 +14,11 @@ end
 
 
 function test_alg(algType, msg)
-    # matrix chosen so that it is negative definite for Float16, Float32, and Float64
-    r_negdef = [
-        1.0     -0.2188  -0.79     0.7773
-       -0.2188   1.0      0.2559  -0.5977
-       -0.79     0.2559   1.0      0.2266
-        0.7773  -0.5977   0.2266   1.0
-    ]
-
     @testset "$msg" begin
         @testset "In-place" begin
             for T in (Float64, Float32, Float16)
                 @testset "$T" begin
-                    r0 = convert(AbstractMatrix{T}, copy(r_negdef))
+                    r0 = get_negdef_matrix(T)
                     alg = autotune(algType, NCMProblem(r0))
 
                     r = copy(r0)
@@ -43,7 +35,7 @@ function test_alg(algType, msg)
         @testset "Out-of-place" begin
             for T in (Float64, Float32, Float16)
                 @testset "$T" begin
-                    r0 = convert(AbstractMatrix{T}, copy(r_negdef))
+                    r0 = get_negdef_matrix(T)
                     alg = autotune(algType, NCMProblem(r0))
 
                     @test_nowarn nearest_cor(r0, alg)

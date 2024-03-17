@@ -3,14 +3,6 @@ using LinearAlgebra
 using NearestCorrelationMatrix.Internals
 
 
-r_negdef = [
-    1.00 0.82 0.56 0.44
-    0.82 1.00 0.28 0.85
-    0.56 0.28 1.00 0.22
-    0.44 0.85 0.22 1.00
-]
-
-
 supported_types = (Float64, Float32, Float16)
 
 
@@ -29,7 +21,7 @@ supported_types = (Float64, Float32, Float16)
             @test diagonals_are_one(y) == false
 
 
-            r = convert(AbstractMatrix{T}, copy(r_negdef))
+            r = get_negdef_matrix(T)
             @test iscorrelation(r) == false
             @test iscorrelation(sqr_mat) == false
             @test iscorrelation(rect_mat) == false
@@ -45,7 +37,7 @@ supported_types = (Float64, Float32, Float16)
 
 
             # cov2cor
-            x = convert(AbstractMatrix{T}, copy(r_negdef))
+            x = get_negdef_matrix(T)
             cor2cov!(x, T[5, 4, 3, 2])
             sym_mat = Symmetric(copy(x))
 
@@ -60,20 +52,17 @@ supported_types = (Float64, Float32, Float16)
             @test constrained_to_pm_one(sym_mat)
 
 
-            # eigen_safe
+            # eigen_sym
             x = symmetric!(2 * rand(T, 10, 10) .- one(T))
             sym_mat = Symmetric(x)
 
-            λ, P = eigen_safe(x)
+            λ, P = eigen_sym(x)
             @test eltype(λ) === T
             @test eltype(P) === T
 
-            λ, P = eigen_safe(sym_mat)
+            λ, P = eigen_sym(sym_mat)
             @test eltype(λ) === T
             @test eltype(P) === T
-
-            x = 2 * rand(T, 10, 10) .- one(T)
-            @test_throws Exception eigen_safe(x)
         end
     end
 
@@ -150,7 +139,7 @@ supported_types = (Float64, Float32, Float16)
 
 
             # cov2cor!
-            x = convert(AbstractMatrix{T}, copy(r_negdef))
+            x = get_negdef_matrix(T)
             cor2cov!(x, T[5, 4, 3, 2])
             sym_mat = Symmetric(copy(x))
 
@@ -175,21 +164,6 @@ supported_types = (Float64, Float32, Float16)
 
             x = 2 * rand(T, 10, 9) .- one(T)
             @test_throws Exception checkmat!(x)
-
-
-            # project_psd!
-            x = symmetric!(2 * rand(T, 10, 10) .- one(T))
-            @test_nowarn project_psd!(x)
-
-            x = 2 * rand(T, 10, 10) .- one(T)
-            if eltype(eigen(x)) <: Complex
-                @test_throws Exception project_psd!(x)
-            else
-                error("Test matrix expected to produce complex eigenvalues. Try running the tests again.")
-            end
-
-            x = Symmetric(2 * rand(T, 10, 10) .- one(T))
-            @test_nowarn project_psd!(x)
         end
     end
 end
