@@ -4,10 +4,26 @@
 abstract type NCMAlgorithm end
 
 
+"""
+    alg_name(alg)
+
+Get the simple name for the NCM algorithm type.
+"""
 alg_name(::Type{T}) where {T<:NCMAlgorithm} = (isempty(T.parameters) ? T : T.name.wrapper)
 alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
 
 
+"""
+    autotune(algType, prob)
+
+Initialize an algorithm that is tuned to the NCM problem.
+"""
+autotune(alg::Type{<:NCMAlgorithm}, ::NCMProblem) = alg()
+
+
+"""
+    init_cacheval(alg, args...)
+"""
 init_cacheval(::NCMAlgorithm, args...) = nothing
 
 
@@ -23,20 +39,10 @@ default_tol(::Type{<:Rational}) = 0
 default_tol(::Type{<:Integer}) = 0
 
 
-
 """
     default_iters(alg, A)
 """
-default_iters(alg::NCMAlgorithm, ::Any) = throw_notdefined(default_iters, alg)
-
-
-function throw_notdefined(f, alg)
-    error(
-"""
-The method `$f` is not defined for `$(alg_name(alg))`, but should be. Please define the method and run again.
-"""
-    )
-end
+default_iters(::NCMAlgorithm, A::Any) = size(A, 1)
 
 
 """
@@ -46,7 +52,6 @@ Trait for if an algorithm modifies the input in place or not. `true` by default.
 """
 modifies_in_place(::Any         ) = true
 modifies_in_place(::NCMAlgorithm) = true
-
 
 
 """
@@ -66,4 +71,4 @@ default_alias_A(alg::NCMAlgorithm, ::Any) = !modifies_in_place(alg)
 
 Get the default algorithm for a given input matrix.
 """
-default_alg(::Any) = AlternatingProjections()
+default_alg(::Any) = Newton()
