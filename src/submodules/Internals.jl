@@ -4,6 +4,8 @@ using LinearAlgebra
 
 
 export
+    get_negdef_matrix,
+    rand_negdef,
     issquare,
     require_square,
     diagonals_are_one,
@@ -21,11 +23,38 @@ export
     cor2cov,
     cor2cov!,
     checkmat!,
-    eigen_safe,
-    project_psd,
+    eigen_sym,
     project_psd!,
-    force_pd!
+    project_psd
 
+
+
+"""
+    get_negdef_matrix(Type)
+
+Get a negative definite matrix for testing.
+"""
+function get_negdef_matrix(::Type{T}) where {T<:AbstractFloat}
+    r = [
+        1.0     -0.2188  -0.79     0.7773
+       -0.2188   1.0      0.2559  -0.5977
+       -0.79     0.2559   1.0      0.2266
+        0.7773  -0.5977   0.2266   1.0
+    ]
+
+    return convert(AbstractMatrix{T}, r)
+end
+
+
+function rand_negdef(::Type{T}, n) where{T<:AbstractFloat}
+    while true
+        r = rand(T, n, n)
+        symmetric!(r)
+        r[diagind(r)] .= one(T)
+
+        !isposdef(r) && return r
+    end
+end
 
 
 function issquare(X::AbstractMatrix)
@@ -266,166 +295,30 @@ end
 
 
 
+eigen_sym(X::Symmetric{T}) where {T<:Real} = eigen(X, sortby=x->-x)
 
-"""
-    eigen_safe(X)
-
-Compute the eigen docomposition of `X` with eigenvalues in descending order. This method is
-also type stable in the sense that if the eltype of the input is `T`, then the eltype of the
-output is also `T`.
-"""
-function eigen_safe(X::AbstractMatrix{T}) where {T<:Real}
-    E = eigen(X, sortby=x->-x)
-
-    TE = eltype(E)
-    TE != T && error("Eigen eltype does not match the input eltype")
-    TE <: Complex && error("Eigen decomposition resulted in complex values")
-
-    return E
-end
-
-# symmetric matrices are guaranteed to have real eigenvalues, so no checks required.
-function eigen_safe(X::Symmetric{T}) where {T<:Real}
-    return eigen(X, sortby=x->-x)
-end
-
-#=
-Unlike eigen(::Matrix{Float16}) which returns Float16, the returned eltype of
-eigen(::Symmetric{Float16}) is Float32. We do this extra conversion for less surprising
-eltype results.
-=#
-function eigen_safe(X::Symmetric{Float16})
+function eigen_sym(X::Symmetric{Float16})
     E = eigen(X, sortby=x->-x)
     values = convert(AbstractVector{Float16}, E.values)
     vectors = convert(AbstractMatrix{Float16}, E.vectors)
     return Eigen(values, vectors)
 end
 
+eigen_sym(X::AbstractMatrix{T}) where {T<:Real} = eigen_sym(Symmetric(X))
 
 
-"""
-    project_psd!(X, λ, P)
 
-Project `X` onto the cone of positive semi-definite matrices. This will modify `X` in place.
-
-- `X` is the input matrix
-- `λ` is a vector of the eigenvalues of `X` sorted in descending order
-- `P` are the corresponding eigenvectors to `λ`
-"""
-function project_psd!(
-    X::AbstractMatrix{T},
-    λ::AbstractVector{T},
-    P::AbstractMatrix{T}
-) where {T}
-	n = length(λ)
-	r = count(>(0), λ)
-
-	if r == n
-		nothing
-    elseif r == 0
-		fill!(X, zero(T))
-	elseif r == 1
-		P1 = @view P[:,1]
-        λ1 = λ[1]
-		mul!(X, P1, P1', λ1, 0)
-	elseif 2r ≤ n
-		Pr = @view P[:, begin:r]
-		λr = sqrt(Diagonal(λ[begin:r]))
-		Q = Pr * λr
-        mul!(X, Q, Q')
-	else
-		Ps = @view P[:, r+1:end]
-		λs = sqrt(Diagonal(-λ[r+1:end]))
-		Q = Ps * λs
-        mul!(X, Q, Q', 1, 1)
-	end
-
-	return X
-end
-
-"""
-    project_psd!(X)
-
-Project `X` onto the cone of positive semi-definite matrices. This will modify `X` in place.
-
-- `X` is the input matrix
-"""
-function project_psd!(X::AbstractMatrix{T}) where {T<:Real}
-    λ, P = eigen_safe(X)
-    return project_psd!(X, λ, P)
-end
-
-function project_psd!(X::Symmetric{T}) where {T<:Real}
-    λ, P = eigen_safe(X)
-    symmetric!(X.data, sym_uplo(X.uplo))
-    project_psd!(X.data, λ, P)
+function project_psd!(X::AbstractMatrix{T}, ϵ::T=zero(T)) where T
+    ϵ = max(ϵ, zero(T))
+    λ, P = eigen_sym(X)
+    replace!(x -> max(x, ϵ), λ)
+    X .= P * Diagonal(λ) * P'
     return X
 end
 
-"""
-    project_psd(X)
-
-The projection of `X` onto the cone of positive semi-definite matrices.
-
-- `X` is the input matrix
-"""
-project_psd(X::AbstractMatrix{T}) where {T<:Real} = project_psd!(copy(X))
-
-"""
-    project_psd(X, λ, P)
-
-The projection of `X` onto the cone of positive semi-definite matrices.
-
-- `X` is the input matrix
-- `λ` is a vector of the eigenvalues of `X` sorted in descending order
-- `P` are the corresponding eigenvectors to `λ`
-"""
-function project_psd(
-    X::AbstractMatrix{T},
-    λ::AbstractVector{T},
-    P::AbstractMatrix{T}
-) where {T<:Real}
-    return project_psd!(copy(X), λ, P)
+function project_psd(X::AbstractMatrix{T}, ϵ::T=zero(T)) where T
+    return project_psd!(copy(X), ϵ)
 end
 
-
-
-"""
-    force_pd!(X, ϵ)
-
-Force a matrix to be positive definite by replacing all eigenvalues below a threshold with
-a small positve value.
-
-- `X` is the input matrix
-- `ϵ` is the threshold for the eigenvalues
-"""
-function force_pd!(X::AbstractMatrix{T}, ϵ::T=eps(T)) where {T<:Real}
-    λ, P = eigen_safe(X)
-    return force_pd!(X, λ, P, ϵ)
-end
-
-"""
-    force_pd!(X, λ, P, ϵ)
-
-Force a matrix to be positive definite by replacing all eigenvalues below a threshold with
-a small positve value.
-
-- `X` is the input matrix
-- `λ` is a vector of the eigenvalues of `X` sorted in descending order
-- `P` are the corresponding eigenvectors to `λ`
-- `ϵ` is the threshold for the eigenvalues
-"""
-function force_pd!(
-    X::AbstractMatrix{T},
-    λ::AbstractVector{T},
-    P::AbstractMatrix{T},
-    ϵ::T=eps(T)
-) where {T<:Real}
-    ϵ = max(ϵ, eps(T))
-    D = Diagonal(max.(λ, ϵ))
-    X .= P * D * P'
-    symmetric!(X)
-    return X
-end
 
 end
