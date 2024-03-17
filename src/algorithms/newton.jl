@@ -1,5 +1,7 @@
+# https://www.polyu.edu.hk/ama/profile/dfsun/
+
 """
-    Newton(; kwargs...)
+    NewtonNew(; tau, tol_cg, tol_ls, iter_cg, iter_ls)
 
 # Parameters
 - `tau`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
@@ -20,7 +22,7 @@ end
 
 function Newton(
     args...;
-    tau::Real=sqrt(eps()),
+    tau::Real = eps(),
     tol_cg::Real = 1e-2,
     tol_ls::Real = 1e-4,
     iter_cg::Int = 200,
@@ -30,306 +32,358 @@ function Newton(
     return Newton(tau, tol_cg, tol_ls, iter_cg, iter_ls, args, kwargs)
 end
 
-default_iters(::Newton, A) = max(size(A,1), 10)
+
+autotune(::Type{Newton}, prob::NCMProblem) = autotune(Newton, prob.A)
+autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(tau=1e-12)
+autotune(::Type{Newton}, A::AbstractMatrix{Float32}) = Newton(tau=1e-8)
+autotune(::Type{Newton}, A::AbstractMatrix{Float16}) = Newton(tau=1e-4)
 
 
-function CommonSolve.solve!(solver::NCMSolver, alg::Newton)
-    R = solver.A
-    n = size(R, 1)
-    T = eltype(R)
+default_iters(::Newton, A) = size(A,1)
 
-    # Setup
-    tau        = max(alg.tau, 0)
-    tol_cg     = alg.tol_cg
-    tol_ls     = alg.tol_ls
-    iter_cg    = alg.iter_cg
-    iter_ls    = alg.iter_ls
-    err_tol    = solver.reltol
-    inner_eps  = 1e-6
+modifies_in_place(::Newton) = false
 
-    b = ones(T, n)
-    b .-= tau
-    R[diagind(R)] .-= tau
-    b₀ = copy(b)
 
-    y    = zeros(T, n)
-    x₀   = copy(y)
-    X    = copy(R)
-    λ, P = eigen_safe(Symmetric(X))
+function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
+    G = Symmetric(solver.A)
+    n = size(G, 1)
+    T = eltype(G)
 
-    f₀, Fy = _gradient(y, λ, P, b₀)
-    f      = f₀
-    b     .= b₀ - Fy
+    tau = max(alg.tau, zero(T))
+    error_tol = max(eps(T), solver.reltol)
 
-    _pca!(X, b₀, λ, P)
+    b = ones(T, n) .- tau
+    G[diagind(G)] .-= tau
 
-    val_R    = norm(R)^2 / 2
-    val_dual = val_R - f₀
-    val_obj  = norm(X - R)^2 / 2
-    gap      = (val_obj - val_dual) / (1 + abs(val_dual) + abs(val_obj))
+    # original diagonal
+    b0 = copy(b)
+    # initial dual solution
+    y = zeros(T, n)
+    # gradient of the dual
+    ∇fy = zeros(T, n)
+    # previous dual solution
+    x0 = copy(y)
+    # diagonal preconditioner
+    v = ones(T, n)
+    # step direction
+    d = zeros(T, n)
+    # initial primal solution
+    X = G + Diagonal(y)
+    # full omega matrix
+    Ω = Matrix{T}(undef, n, n)
 
-    norm_b  = norm(b)
-    norm_b0 = norm(b₀) + 1
+    λ, P = eigen_sym(X)
+    f0 = dual_gradient!(∇fy, y, λ, P, b0)
+    f = f0
+    b .= b0 - ∇fy
+
+    val_G = norm(G)^2 / 2
+    val_dual = val_G - f0
+
+    primal_feasible_solution!(X, λ, P, b0)
+
+    val_primal = norm(X - G)^2 / 2
+    gap = (val_primal - val_dual) / (1 + abs(val_primal) + abs(val_dual))
+
+    norm_b = norm(b)
+    norm_b0 = norm(b0) + 1
     norm_b_rel = norm_b / norm_b0
 
     k = 0
-    c = zeros(T, n)
-    d = zeros(T, n)
+    while gap > error_tol && norm_b_rel > error_tol && k < solver.maxiters
+        W = omega_matrix(λ)
 
-    while (gap > err_tol) && (norm_b_rel > err_tol) && (k < solver.maxiters)
-        Ω₀ = _create_omega_matrix(λ)
+        precondition_matrix!(v, W, P, Ω)
+        preconditioned_cg!(d, b, v, W, P, alg.tol_cg, alg.iter_cg)
 
-        _precondition_matrix!(c, Ω₀, P)
-        _pre_conjugate_gradient!(d, b, c, Ω₀, P, tol_cg, iter_cg)
+        slope = dot(∇fy - b0, d)
+        y .= x0 + d
+        X .= G + Diagonal(y)
+        λ, P = eigen_sym(X)
+        f = dual_gradient!(∇fy, y, λ, P, b0)
 
-        slope = dot(Fy - b₀, d)
-        y    .= x₀ + d
-        X    .= R + diagm(y)
-        λ, P = eigen_safe(Symmetric(X))
-        f, Fy = _gradient(y, λ, P, b₀)
-
-        k_inner = 0
-        while (k_inner ≤ iter_ls) && (f > f₀ + tol_ls * slope / 2^k_inner + inner_eps)
-            k_inner += 1
-            y    .= x₀ + d / 2^k_inner
-            X    .= R + diagm(y)
-            λ, P = eigen_safe(Symmetric(X))
-            f, Fy = _gradient(y, λ, P, b₀)
+        m = 0
+        while (m < alg.iter_ls) && (f > f0 + alg.tol_ls * slope / 2^m + 1e-6)
+            m += 1
+            y .= x0 + d / 2^m
+            X .= G + Diagonal(y)
+            λ, P = eigen_sym(X)
+            f = dual_gradient!(∇fy, y, λ, P, b0)
         end
 
-        x₀  = copy(y)
-        f₀  = f
+        x0 .= y
+        f0 = f
 
-        _pca!(X, b₀, λ, P)
-        val_dual = val_R - f₀
-        val_obj  = norm(X - R)^2 / 2
-        gap      = (val_obj - val_dual) / (1 + abs(val_dual) + abs(val_obj))
-        b        = b₀ - Fy
-        norm_b   = norm(b)
+        val_dual = val_G - f0
+        primal_feasible_solution!(X, λ, P, b0)
+
+        val_primal = norm(X - G)^2 / 2
+        gap = (val_primal - val_dual) / (1 + abs(val_primal) + abs(val_dual))
+
+        b .= b0 - ∇fy
+        norm_b = norm(b)
         norm_b_rel = norm_b / norm_b0
 
         k += 1
     end
 
+    G[diagind(G)] .+= tau # restore the diagonal of A
     X[diagind(X)] .+= tau
+
     cov2cor!(X)
 
     return build_ncm_solution(alg, X, gap, solver; iters=k)
 end
 
 
+eigen_sym(X::AbstractMatrix{T}) where {T<:Real} = eigen(Symmetric(X), sortby=x->-x)
+eigen_sym(X::Symmetric{T})      where {T<:Real} = eigen(X,            sortby=x->-x)
+
+function eigen_sym(X::Symmetric{Float16})
+    E = eigen(X, sortby=x->-x)
+    values = convert(AbstractVector{Float16}, E.values)
+    vectors = convert(AbstractMatrix{Float16}, E.vectors)
+    return Eigen(values, vectors)
+end
+
 
 """
-    _gradient(y::Vector{T}, λ₀::Vector{T}, P::Matrix{T}, b₀::Vector{T}) where {T<:AbstractFloat}
+Compute
 
-Return f(yₖ) and ∇f(yₖ) where
-
-f(y) = ½‖(A + diag(y))₊‖² - eᵀy
+``∇f(y) = diag((A + diag(y))₊) - e``
 
 and
 
-∇f(y) = Diag((A + diag(y))₊) - e
+``f(y) = ½‖(A + diag(y))₊‖² - eᵀy``
+
+- `y`: current dual solution
+- `λ`: vector of eigenvalues
+- `P`: eigenvectors
+- `b`: a vector of (1-τ)'s
 """
-function _gradient(
-    y::AbstractVector{T},
-    λ₀::AbstractVector{T},
-    P::AbstractMatrix{T},
-    b₀::AbstractVector{T}
-) where {T<:AbstractFloat}
-    r = sum(λ₀ .> 0)
-    λ = copy(λ₀)
-    n = length(y)
+function dual_gradient!(∇fy, y, λ, P, b)
+    r = count(>(0), λ)
+    Pr = @view P[:, begin:r]
+    λr = @view λ[begin:r]
 
-    r == 0 && return zero(T), zeros(T, n)
+    fy = dot(λr, λr) / 2 - dot(b, y)
+    ∇fy .= diag(Pr * Diagonal(λr) * Pr')
 
-    λ[λ .< 0] .= zero(T)
-    Fy = vec(sum((P .* transpose(λ)) .* P, dims=2))
-    f  = T(0.5) * dot(λ, λ) - dot(b₀, y)
-
-    return f, Fy
+    return fy
 end
 
 
+"""
+Compute the primal feasible solution using PCA
 
+- `X`: current primal solution
+- `λ`: vector of eigenvalues
+- `P`: eigenvectors
+- `b`: a vector of (1-τ)'s
 """
-    _pca!(X::Matrix{T}, b::Vector{T}, λ::Vector{T}, P::Matrix{T}) where {T<:AbstractFloat}
-"""
-function _pca!(
-    X::AbstractMatrix{T},
-    b::AbstractVector{T},
-    λ::AbstractVector{T},
-    P::AbstractMatrix{T}
-) where {T<:AbstractFloat}
-    project_psd!(X, λ, P)
-    d  = diag(X)
-    d .= max.(d, b)
+function primal_feasible_solution!(X, λ, P, b)
+    r = count(>(0), λ)
+    n = size(X, 1)
+    s = n - r
+
+    if r == 0
+        fill!(X, zero(eltype(X)))
+    elseif r == 1
+        P1 = @view P[:,1]
+        λ1 = λ[1]
+		mul!(X, P1, P1', λ1, 0)
+    elseif r ≤ s
+        Pr = @view P[:, begin:r]
+		λr = sqrt(Diagonal(λ[begin:r]))
+		Q = Pr * λr
+        mul!(X, Q, Q')
+    elseif r < n
+        Ps = @view P[:, r+1:end]
+		λs = sqrt(Diagonal(-λ[r+1:end]))
+		Q = Ps * λs
+        mul!(X, Q, Q', 1, 1)
+    end
+
+    # scales `X` diagonal to `b` without changing PSD property
+    d = max.(diag(X), b)
     X[diagind(X)] .= d
     d .= sqrt.(b ./ d)
-    d₂ = d * transpose(d)
-    X .= X .* d₂
+    d2 = d * d'
+    X .*= d2
+
     return X
 end
 
+primal_feasible_solution!(X::Symmetric, args...) = primal_feasible_solution!(X.data, args...)
 
 
 """
-    _pre_conjugate_gradient!(p::Vector{T}, b::Vector{T}, c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, tol::Real, num_iter::Int) where {T<:AbstractFloat}
+Generates the second block of M(y), the essential part of the first-order difference of `d`
 
-Preconditioned conjugate gradient method to solve Vₖdₖ = -∇f(yₖ)
+- `λ`: the eigenvalues of `X`
 """
-function _pre_conjugate_gradient!(
-    p::AbstractVector{T},
-    b::AbstractVector{T},
-    c::AbstractVector{T},
-    Ω₀::AbstractMatrix{T},
-    P::AbstractMatrix{T},
-    tol::Real,
-    num_iter::Int
-) where {T<:AbstractFloat}
+function omega_matrix(λ)
+    r = count(>(0), λ)
+    n = length(λ)
+
+    r == 0 && return zeros(eltype(λ), 0, 0)
+    r == n && return ones(eltype(λ), n, n)
+
+    λr = @view λ[begin:r]
+    λs = @view λ[r+1:end]
+
+    @tullio W[i,j] := λr[i] / (λr[i] - λs[j])
+
+    return W
+end
+
+
+
+function full_omega_matrix!(Ω, W)
+    T = eltype(Ω)
+    r = size(W, 1)
+
+    fill!(@view(Ω[begin:r,begin:r]), one(T))
+    fill!(@view(Ω[r+1:end,r+1:end]), zero(T))
+    @view(Ω[begin:r, r+1:end]) .= W
+    @view(Ω[r+1:end, begin:r]) .= W'
+
+    return Ω
+end
+
+
+perturb(::Type{T}) where {T<:Real} = sqrt(eps(eltype(T))) / 4
+perturb(::AbstractArray{T,N}) where {T,N} = perturb(T)
+perturb(::T) where {T<:AbstractFloat} = perturb(T)
+
+
+"""
+Generate the Jacobian product with `d`:
+
+``F'(y)(d) = V(y)d``
+
+- `d`: the step direction in the CG method
+- `W`: the matrix returned from `omega_matrix`
+- `P`: the eigenvectors of `X`
+"""
+function jacobian_matrix!(Vd, d, W, P)
+    T = eltype(Vd)
+    n = length(d)
+    r, s = size(W)
+
+
+    if r == n
+        Vd .= (1 + perturb(d)) * d
+        return Vd
+    end
+
+    if r == 0
+        fill!(Vd, zero(T))
+        return Vd
+    end
+
+    Pr = @view P[:, begin:r]
+    Ps = @view P[:, r+1:end]
+
+    Wrs = W .* (Pr' * Diagonal(d) * Ps)
+    PW = Pr * Wrs
+    hh = 2 * sum(PW .* Ps, dims=2)
+
+    if r < s
+        PrPr = Pr * Pr'
+        Vd .= (PrPr .* PrPr) * d + hh + perturb(d) * d
+    else
+        PsPs = Ps * Ps'
+        Vd .= d + (PsPs .* PsPs) * d + hh - (2 * d .* diag(PsPs)) + perturb(d) * d
+    end
+
+    return Vd
+end
+
+
+"""
+Generate the diagonal preconditioner, `v`
+
+- `v`: the diagonal vector to write into
+- `W`: the matrix returned from `omega_matrix`
+- `P`: the eigenvectors of `X`
+- `Ω`: pre-allocated data for the full Omega matrix
+"""
+function precondition_matrix!(v, W, P, Ω)
+    T = eltype(P)
+    r = size(W, 1)
+    n = size(P, 1)
+
+    if r == 0 || r == n
+        fill!(v, one(T))
+        return v
+    end
+
+    full_omega_matrix!(Ω, W)
+
+    Q = P .* P
+    M = Ω * Q
+
+    @tullio v[i] = dot(@view(Q[:,i]), @view(M[:,i]))
+
+    ϵ = sqrt(eps(T))
+    replace!(x -> max(x, ϵ), v)
+
+    return v
+end
+
+
+"""
+- `p`: the solution vector to write into
+- `b`: a vector of (1-τ)'s
+- `v`: the diagonal preconditioner
+- `W`: the matrix returned from `omega_matrix`
+- `P`: the eigenvectors of `X`
+"""
+function preconditioned_cg!(p, b, v, W, P, tol, maxiter)
+    T = eltype(p)
+    r = copy(b) # initial residual
+
+    norm_b = norm(b)
+    tol_b = tol * norm_b
+
     fill!(p, zero(T))
 
-    n = length(p)
-    ϵ_b = T(tol) * norm(b)
-    r   = copy(b)
-    z   = r ./ c
-    d   = copy(z)
-    rz1 = sum(r .* z)
-    rz2 = one(T)
-    w   = zeros(T, n)
+    z = r ./ v
+    rz1 = dot(r, z)
+    rz2 = one(rz1)
+    d = copy(z)
+    w = similar(d)
 
-    for k in 1:num_iter
+    k = 0
+
+    for k = 1:maxiter
         if k > 1
-            d .= z + d * (rz1 / rz2)
+            β = rz1 / rz2
+            d .= z + β * d
         end
 
-        _jacobian!(w, d, Ω₀, P, n)
+        jacobian_matrix!(w, d, W, P)
+        den = dot(d, w)
 
-        denom = sum(d .* w)
+        if den ≤ 0
+            p .= d / norm(d)
+            break
+        else
+            a = rz1 / den
+            p .+= a * d
+            r .-= a * w
+        end
 
-        denom ≤ 0 && return d / norm(d)
+        z .= r ./ v
 
-        a = rz1 / denom
-        p .+= a*d
-        r .-= a*w
+        if norm(r) ≤ tol_b
+            break
+        end
 
-        norm(r) ≤ ϵ_b && return p
-
-        z .= r ./ c
-        rz2, rz1 = rz1, dot(r, z)
+        rz2 = rz1
+        rz1 = dot(r, z)
     end
 
     return p
-end
-
-
-
-"""
-    _precondition_matrix!(c::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}) where {T<:AbstractFloat}
-
-Create the preconditioner matrix used in solving the linear system `Vₖdₖ = -∇f(yₖ)` in the conjugate gradient method. Stores the result in `c`
-"""
-function _precondition_matrix!(
-    c::AbstractVector{T},
-    Ω₀::AbstractMatrix{T},
-    P::AbstractMatrix{T}
-) where {T<:AbstractFloat}
-    r, s = size(Ω₀)
-    n = length(c)
-
-    if r == 0 || r == n
-        fill!(c, one(T))
-        return c
-    end
-
-    H  = transpose(P .* P)
-    H₁ = @view H[1:r,:]
-    H₂ = @view H[r+1:n,:]
-
-    if r < s
-        H12 = transpose(H₁) * Ω₀
-        c .= transpose(sum(H₁, dims=1)).^2 + 2 * sum(H12 .* transpose(H₂), dims=2)
-    else
-        H12 = (1.0 .- Ω₀) * H₂
-        c .= transpose(sum(H, dims=1)).^2 - transpose(sum(H₂, dims=1)).^2 - 2 * transpose(sum(H₁ .* H12, dims=1))
-    end
-
-    ϵ = T(1e-8)
-    c[c .< ϵ] .= ϵ
-    return c
-end
-
-
-
-"""
-    _create_omega_matrix(λ::Vector{T}) where {T<:AbstractFloat}
-
-The Omega matrix is used in creating the preconditioner matrix.
-"""
-function _create_omega_matrix(λ::AbstractVector{T}) where {T<:AbstractFloat}
-    n = length(λ)
-    r = sum(>(0), λ)
-    s = n - r
-
-    r == 0 && return zeros(T, 0, 0)
-    r == n && return ones(T, n, n)
-
-    M = zeros(T, r, s)
-    λᵣ = @view λ[1:r]
-    λₛ = @view λ[r+1:n]
-    for j in eachindex(λₛ), i in eachindex(λᵣ)
-        @inbounds M[i,j] = λᵣ[i] / (λᵣ[i] - λₛ[j])
-    end
-
-    return M
-end
-
-
-
-"""
-    _jacobian!(w::Vector{T}, x::Vector{T}, Ω₀::Matrix{T}, P::Matrix{T}, n::Int) where {T<:AbstractFloat}
-
-Create the Generalized Jacobian matrix for the Newton direction step, and store in `w`
-"""
-function _jacobian!(
-    w::AbstractVector{T},
-    x::AbstractVector{T},
-    Ω₀::AbstractMatrix{T},
-    P::AbstractMatrix{T},
-    n::Int
-) where {T<:AbstractFloat}
-    r, s = size(Ω₀)
-    perturbation = T(1e-10)
-
-    if r == 0
-        fill!(w, zero(T))
-        return w
-    end
-
-    if r == n
-        copyto!(w, x .* (1 + perturbation))
-        return w
-    end
-
-    P₁ = @view P[:, 1:r]
-    P₂ = @view P[:, r+1:n]
-
-    if r < s
-        H₁ = diagm(x) * P₁
-        Ω  = Ω₀ .* (transpose(H₁) * P₂)
-
-        HT₁ = P₁ * transpose(P₁) * H₁ + P₂ * transpose(Ω)
-        HT₂ = P₁ * Ω
-
-        w .= sum(P .* [HT₁ HT₂], dims=2) + x .* perturbation
-        return w
-    else
-        H₂ = diagm(x) * P₂
-        Ω  = (1 .- Ω₀) .* (transpose(P₁) * H₂)
-
-        HT₁ = P₂ * transpose(Ω)
-        HT₂ = P₂ * transpose(H₂) * P₂ + P₁ * Ω
-
-        w .= x .* (1 + perturbation) - sum(P .* [HT₁ HT₂], dims=2)
-        return w
-    end
 end
