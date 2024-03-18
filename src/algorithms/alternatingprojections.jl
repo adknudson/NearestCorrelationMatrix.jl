@@ -10,7 +10,7 @@ end
 
 AlternatingProjections(args...; kwargs...) = AlternatingProjections(args, kwargs)
 
-default_iters(::AlternatingProjections, A) = max(size(A,1), 20)
+default_iters(::AlternatingProjections, A) = clamp(size(A,1), 20, 200)
 
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)
