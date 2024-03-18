@@ -33,13 +33,10 @@ function Newton(
 end
 
 
-autotune(::Type{Newton}, prob::NCMProblem) = autotune(Newton, prob.A)
-autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(tau=1e-12)
-autotune(::Type{Newton}, A::AbstractMatrix{Float32}) = Newton(tau=1e-8)
-autotune(::Type{Newton}, A::AbstractMatrix{Float16}) = Newton(tau=1e-4)
-
-
-default_iters(::Newton, A) = size(A,1)
+autotune(::Type{Newton}, prob::NCMProblem) = _autotune(Newton, prob.A)
+_autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(tau=1e-12)
+_autotune(::Type{Newton}, A::AbstractMatrix{Float32}) = Newton(tau=1e-8)
+_autotune(::Type{Newton}, A::AbstractMatrix{Float16}) = Newton(tau=1e-4)
 
 modifies_in_place(::Newton) = false
 
@@ -134,7 +131,6 @@ function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
 
     return build_ncm_solution(alg, X, gap, solver; iters=k)
 end
-
 
 
 """
