@@ -35,8 +35,40 @@ end
 
 autotune(::Type{Newton}, prob::NCMProblem) = _autotune(Newton, prob.A)
 _autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(tau=1e-12)
-_autotune(::Type{Newton}, A::AbstractMatrix{Float32}) = Newton(tau=min(eps(Float32) * size(A,1), Float32(1e-4)))
-_autotune(::Type{Newton}, A::AbstractMatrix{Float16}) = Newton(tau=min(eps(Float16) * size(A,1), Float16(1e-2)))
+
+function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
+    n = size(A, 1)
+
+    tau = if n ≤ 50
+        7.5e-6
+    elseif n ≤ 100
+        1e-5
+    elseif n ≤ 500
+        5e-5
+    elseif n ≤ 1000
+        1e-4
+    else
+        5e-5
+    end
+
+    Newton(tau=tau)
+end
+
+function _autotune(::Type{Newton}, A::AbstractMatrix{Float16})
+    n = size(A, 1)
+
+    tau = if n ≤ 25
+        5e-3
+    elseif n ≤ 50
+        1e-2
+    elseif n ≤ 500
+        5e-2
+    else
+        1e-1
+    end
+
+    Newton(tau=tau)
+end
 
 
 modifies_in_place(::Newton) = false
