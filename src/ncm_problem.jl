@@ -9,6 +9,9 @@ struct NCMProblem{T, P, K}
     p::P
     kwargs::K
     function NCMProblem(A, p=NullParameters(); kwargs...)
+        require_matrix(A)
+        require_square(A)
+
         new{typeof(A), typeof(p), typeof(kwargs)}(A, p, kwargs)
     end
 end
