@@ -14,7 +14,7 @@ alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
 
 
 """
-    autotune(algType, prob)
+    autotune(algtype, prob)
 
 Initialize an algorithm that is tuned to the NCM problem.
 
@@ -33,7 +33,7 @@ julia> prob = NCMProblem(r);
 julia> alg = autotune(Newton, prob);
 ```
 """
-autotune(algType::Type{<:NCMAlgorithm}, ::NCMProblem) = algType()
+autotune(algtype::Type{<:NCMAlgorithm}, ::NCMProblem) = algtype()
 
 
 """
