@@ -19,8 +19,8 @@ end
 
 autotune(::Type{DirectProjection}, prob::NCMProblem) = _autotune(DirectProjection, prob.A)
 _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float64}) = DirectProjection(tau=1e-12)
-_autotune(::Type{DirectProjection}, A::AbstractMatrix{Float32}) = DirectProjection(tau=1e-8)
-_autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16}) = DirectProjection(tau=1e-4)
+_autotune(::Type{DirectProjection}, A::AbstractMatrix{Float32}) = DirectProjection(tau=min(eps(Float32) * size(A,1), Float32(1e-4)))
+_autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16}) = DirectProjection(tau=min(eps(Float16) * size(A,1), Float16(1e-2)))
 
 function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
     X = solver.A

@@ -35,10 +35,12 @@ end
 
 autotune(::Type{Newton}, prob::NCMProblem) = _autotune(Newton, prob.A)
 _autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(tau=1e-12)
-_autotune(::Type{Newton}, A::AbstractMatrix{Float32}) = Newton(tau=1e-8)
-_autotune(::Type{Newton}, A::AbstractMatrix{Float16}) = Newton(tau=1e-4)
+_autotune(::Type{Newton}, A::AbstractMatrix{Float32}) = Newton(tau=min(eps(Float32) * size(A,1), Float32(1e-4)))
+_autotune(::Type{Newton}, A::AbstractMatrix{Float16}) = Newton(tau=min(eps(Float16) * size(A,1), Float16(1e-2)))
+
 
 modifies_in_place(::Newton) = false
+supports_symmetric(::Newton) = true
 
 
 function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
