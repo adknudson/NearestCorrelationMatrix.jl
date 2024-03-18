@@ -34,7 +34,7 @@ end
 
 
 function CommonSolve.solve(prob::NCMProblem, ::Nothing, args...; kwargs...)
-    return solve(prob, default_alg(prob.A), args...; kwargs...)
+    return solve!(init(prob, nothing, args...; kwargs...))
 end
 
 

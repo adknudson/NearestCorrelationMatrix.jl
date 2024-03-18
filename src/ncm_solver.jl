@@ -71,14 +71,10 @@ end
 
 
 
-function CommonSolve.init(prob::NCMProblem, alg::Nothing, args...; kwargs...)
-    return init(prob, default_alg(prob.A), args...; kwargs...)
-end
-
-
-
-function CommonSolve.step!(solver::NCMSolver, args...; kwargs...)
-    return step!(solver, solver.alg, args...; kwargs...)
+function CommonSolve.init(prob::NCMProblem, ::Nothing, args...; kwargs...)
+    algType = default_algtype(prob)
+    alg = autotune(algType, prob)
+    return init(prob, alg, args...; kwargs...)
 end
 
 
