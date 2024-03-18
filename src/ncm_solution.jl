@@ -61,6 +61,12 @@ end
 Solve the initialized NCM problem.
 """
 function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
-    # Algorithms will dispatch on this method signature
-    return solve!(solver, solver.alg, args...; kwargs...)
+    sol = solve!(solver, solver.alg, args...; kwargs...)
+
+    if sol.solver.ensure_pd && !isposdef(sol.X)
+        project_psd!(sol.X, eps(eltype(sol.X)))
+        cov2cor!(sol.X)
+    end
+
+    return sol
 end

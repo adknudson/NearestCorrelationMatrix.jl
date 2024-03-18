@@ -23,6 +23,7 @@ mutable struct NCMSolver{TA, P, Talg, Tc, Ttol}
     abstol::Ttol  # absolute tolerance for convergence
     reltol::Ttol  # relative tolerance for convergence
     maxiters::Int # maximum number of iterations
+    ensure_pd::Bool # ensures that the resulting matrix is positive definite
     verbose::Bool
 end
 
@@ -42,6 +43,7 @@ Initialize the solver with the given algorithm.
 - `convert_f16`
 - `force_f16`
 - `uplo`
+- `ensure_pd`
 - `verbose`
 """
 function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
@@ -53,6 +55,7 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     convert_f16::Bool=false,
     force_f16::Bool=false,
     uplo::Symbol=:U,
+    ensure_pd::Bool=false,
     verbose::Bool = false,
     kwargs...
 )
@@ -122,7 +125,7 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     Tc = typeof(cacheval)
 
     solver = NCMSolver{typeof(A), typeof(p), typeof(alg), Tc, typeof(reltol)}(
-        A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, verbose)
+        A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, ensure_pd, verbose)
 
     return solver
 end
