@@ -316,6 +316,14 @@ function project_psd!(X::AbstractMatrix{T}, ϵ::T=zero(T)) where T
     return X
 end
 
+function project_psd!(X::Symmetric{T}, ϵ::T=zero(T)) where T
+    ϵ = max(ϵ, zero(T))
+    λ, P = eigen_sym(X)
+    replace!(x -> max(x, ϵ), λ)
+    X.data .= P * Diagonal(λ) * P'
+    return X
+end
+
 function project_psd(X::AbstractMatrix{T}, ϵ::T=zero(T)) where T
     return project_psd!(copy(X), ϵ)
 end
