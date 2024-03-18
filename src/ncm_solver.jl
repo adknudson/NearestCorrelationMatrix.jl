@@ -27,7 +27,11 @@ mutable struct NCMSolver{TA, P, Talg, Tc, Ttol}
 end
 
 
+"""
+    init(prob, alg)
 
+Initialize the solver with the given algorithm.
+"""
 function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     alias_A = default_alias_A(alg, prob.A),
     abstol = default_tol(real(eltype(prob.A))),
@@ -64,24 +68,34 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
 end
 
 
+"""
+    init(prob, algtype)
 
-function CommonSolve.init(prob::NCMProblem, args...; kwargs...)
-    return init(prob, nothing, args...; kwargs...)
-end
-
-
-
-function CommonSolve.init(prob::NCMProblem, ::Nothing, args...; kwargs...)
+Initialize the algorithm and the solver.
+"""
+function CommonSolve.init(prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...)
     algType = default_algtype(prob)
     alg = autotune(algType, prob)
     return init(prob, alg, args...; kwargs...)
 end
 
 
+"""
+    init(prob)
+
+Initialize the solver with the default algorithm.
+"""
+function CommonSolve.init(prob::NCMProblem, args...; kwargs...)
+    return init(prob, nothing, args...; kwargs...)
+end
 
 """
-    residual(solver, alg)
+    init(prob, nothing)
 
-Calculates the residual of the solver.
+Initialize the solver with the default algorithm.
 """
-residual(::NCMSolver, ::NCMAlgorithm) = nothing
+function CommonSolve.init(prob::NCMProblem, ::Nothing, args...; kwargs...)
+    algType = default_algtype(prob)
+    alg = autotune(algType, prob)
+    return init(prob, alg, args...; kwargs...)
+end
