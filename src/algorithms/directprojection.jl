@@ -13,9 +13,15 @@ struct DirectProjection{A, K} <: NCMAlgorithm
     kwargs::K
 end
 
-function DirectProjection(args...; tau::Real=1e-6, kwargs...)
+function DirectProjection(args...; tau::Real=0, kwargs...)
     return DirectProjection(tau, args, kwargs)
 end
+
+
+modifies_in_place(::DirectProjection) = true
+supports_symmetric(::DirectProjection) = true
+supports_float16(::DirectProjection) = true
+
 
 autotune(::Type{DirectProjection}, prob::NCMProblem) = _autotune(DirectProjection, prob.A)
 
@@ -53,10 +59,11 @@ function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16})
     return DirectProjection(tau=tau)
 end
 
+
 function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
     X = solver.A
     T = eltype(X)
-    tau = max(T(alg.tau), eps(T))
+    tau = max(T(alg.tau), zero(T))
 
     project_psd!(X, tau)
     cov2cor!(X)
