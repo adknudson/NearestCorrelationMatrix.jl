@@ -61,15 +61,6 @@ default_iters(::NCMAlgorithm, A::Any) = size(A, 1)
 
 
 """
-    modifies_in_place(alg)
-
-Trait for if an algorithm modifies the input in place or not. `true` by default.
-"""
-modifies_in_place(::Any         ) = true
-modifies_in_place(::NCMAlgorithm) = true
-
-
-"""
     default_alias_A(alg, A)
 
 Whether to alias the matrix `A` or use a copy by default. When `true`, algorithms that update
@@ -77,13 +68,30 @@ in place can be faster by reusing the memory, but care must be taken as the orig
 will be modified. Default is `true` if the algorithm is known not to modify `A`, otherwise
 is `false`.
 """
-default_alias_A(alg::Any,          ::Any) = !modifies_in_place(alg)
 default_alias_A(alg::NCMAlgorithm, ::Any) = !modifies_in_place(alg)
 
 
 """
-    default_algtype(prob)
+    modifies_in_place(alg)
 
-Get the default algorithm type for a given input matrix.
+Trait for if an algorithm modifies the input in place or not. `true` by default.
 """
-default_algtype(::NCMProblem) = Newton
+modifies_in_place(::NCMAlgorithm) = true
+
+
+"""
+    supports_float16(alg)
+
+Trait for if an algorithm supports matrices with Float16 values. There are often numerical
+instabilities with Float16 values, so the default is `false`.
+"""
+supports_float16(::NCMAlgorithm) = false
+
+
+"""
+    supports_symmetric(alg)
+
+Trait for if an algorithm supports `LinearAlgebra.Symmetric` matrix type (default is `false`).
+If `false`, then a copy using the upper or lower matrix is used instead.
+"""
+supports_symmetric(::NCMAlgorithm) = false
