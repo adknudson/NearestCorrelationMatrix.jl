@@ -53,7 +53,7 @@ function test_alg(algType, msg)
 end
 
 
-@testset "Public API" begin
+@testset "Simple API" begin
     test_alg(Newton, "Newton Method")
     test_alg(DirectProjection, "Direct Projection")
     test_alg(AlternatingProjections, "Alternating Projections")
