@@ -64,7 +64,7 @@ function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
     sol = solve!(solver, solver.alg, args...; kwargs...)
 
     if sol.solver.ensure_pd && !isposdef(sol.X)
-        project_psd!(sol.X, eps(eltype(sol.X)))
+        project_psd!(sol.X, sqrt(eps(eltype(sol.X))))
         cov2cor!(sol.X)
     end
 
