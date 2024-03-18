@@ -19,8 +19,8 @@ NCMJuMPCOSMOExt = ["JuMP", "COSMO"]
 
 [compat]
 Aqua = "0.8"
-CommonSolve = "0.2"
 COSMO = "0.8"
+CommonSolve = "0.2"
 JuMP = "1"
 LinearAlgebra = "1"
 PrecompileTools = "1"
