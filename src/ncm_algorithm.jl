@@ -17,8 +17,23 @@ alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
     autotune(algType, prob)
 
 Initialize an algorithm that is tuned to the NCM problem.
+
+# Examples
+
+```julia-repl
+julia> r = Float32[
+     1.0     -0.2188  -0.79     0.7773
+    -0.2188   1.0      0.2559  -0.5977
+    -0.79     0.2559   1.0      0.2266
+     0.7773  -0.5977   0.2266   1.0
+];
+
+julia> prob = NCMProblem(r);
+
+julia> alg = autotune(Newton, prob);
+```
 """
-autotune(alg::Type{<:NCMAlgorithm}, ::NCMProblem) = alg()
+autotune(algType::Type{<:NCMAlgorithm}, ::NCMProblem) = algType()
 
 
 """
@@ -67,8 +82,8 @@ default_alias_A(alg::NCMAlgorithm, ::Any) = !modifies_in_place(alg)
 
 
 """
-    default_alg(A)
+    default_algtype(prob)
 
-Get the default algorithm for a given input matrix.
+Get the default algorithm type for a given input matrix.
 """
-default_alg(::Any) = Newton()
+default_algtype(::NCMProblem) = Newton
