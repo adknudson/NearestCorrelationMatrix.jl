@@ -1,6 +1,7 @@
 using Test
 using NearestCorrelationMatrix
 using NearestCorrelationMatrix.Internals: get_negdef_matrix
+using LinearAlgebra
 
 
 @testset "Simple API" begin
@@ -20,4 +21,19 @@ using NearestCorrelationMatrix.Internals: get_negdef_matrix
     @test_isimplemented nearest_cor!(r, Newton)
 
     @test nearest_cor!(r) isa AbstractMatrix
+
+    # not symmetric input
+    r = rand(4, 4)
+    @test_nothrow nearest_cor(r)
+    @test_nothrow nearest_cor!(r)
+
+    # Symmetric type input
+    r = Symmetric(rand(4,4))
+    @test_nothrow nearest_cor(r)
+    @test_nothrow nearest_cor!(r)
+
+    # Float16 input
+    r = rand(Float16, 4, 4)
+    @test_nothrow nearest_cor(r)
+    @test_nothrow nearest_cor!(r)
 end
