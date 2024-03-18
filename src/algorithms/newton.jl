@@ -73,6 +73,7 @@ end
 
 modifies_in_place(::Newton) = false
 supports_symmetric(::Newton) = true
+supports_float16(::Newton) = true
 
 
 function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
