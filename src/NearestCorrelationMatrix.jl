@@ -32,7 +32,7 @@ include("algorithms/directprojection.jl")
 using PrecompileTools: @compile_workload
 
 @compile_workload begin
-    for T in (Float16, Float32, Float64)
+    for T in (Float64, Float32)
         A = rand(T, 4, 4)
         nearest_cor(A, Newton())
         nearest_cor(A, AlternatingProjections())
