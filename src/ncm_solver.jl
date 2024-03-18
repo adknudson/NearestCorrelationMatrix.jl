@@ -31,12 +31,28 @@ end
     init(prob, alg)
 
 Initialize the solver with the given algorithm.
+
+## Arguments
+
+- `alias_A`
+- `abstol`
+- `reltol`
+- `maxiters`
+- `fix_sym`
+- `convert_f16`
+- `force_f16`
+- `uplo`
+- `verbose`
 """
 function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     alias_A = default_alias_A(alg, prob.A),
     abstol = default_tol(real(eltype(prob.A))),
     reltol = default_tol(real(eltype(prob.A))),
     maxiters::Int = default_iters(alg, prob.A),
+    fix_sym::Bool=false,
+    convert_f16::Bool=false,
+    force_f16::Bool=false,
+    uplo::Symbol=:U,
     verbose::Bool = false,
     kwargs...
 )
@@ -45,6 +61,15 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     A = if alias_A
         verbose && println("Aliasing A")
         A
+    elseif A isa Symmetric
+        if supports_symmetric(alg)
+            verbose && println("Creating a Symmetric copy of A")
+            copy(A)
+        else
+            verbose && println("$(alg_name(alg)) does not support Symmetric types. " *
+            "Creating a symmetric copy of A.data")
+            symmetric!(copy(A.data), sym_uplo(A.uplo))
+        end
     elseif A isa Matrix
         verbose && println("Creating a copy of A")
         copy(A)
@@ -52,6 +77,41 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
         verbose && println("Creating a deep copy of A")
         deepcopy(A)
     end
+
+
+    if !issymmetric(A)
+        if fix_sym
+            if supports_symmetric(alg)
+                verbose && println("Input matrix is not symmetric. Creating a Symmetric view " *
+                "of the $(uplo==:U ? "upper" : "lower") part of the matrix")
+                A = Symmetric(A, uplo)
+            else
+                verbose && println("Input matrix is not symmetric. Copying the " *
+                "$(uplo==:U ? "upper" : "lower") part of the matrix")
+                symmetric!(A, uplo)
+            end
+        else
+            error("Input matrix is not symmetric. Pass the argument `fix_sym=true`, or ensure " *
+            "that your input matrix is symmetric before solving.")
+        end
+    end
+
+
+    if eltype(A) === Float16 && !supports_float16(alg)
+        if convert_f16
+            verbose && println("Input matrix has eltype Float16, which $(alg_name(alg)) does " *
+            "not support. Converting to `AbstractMatrix{Float32}`")
+            A = convert(AbstractMatrix{Float32}, A)
+        elseif force_f16
+            verbose && println("Input matrix has eltype Float16, which $(alg_name(alg)) does " *
+            "not support. `force_f16=true` so using input matrix anyway.")
+        else
+            error("Input matrix has eltype Float16, which $(alg_name(alg)) does not support. " *
+            "Pass either the argument `convert_f16=true` or `force_f16=true`, or convert " *
+            "your input matrix to an `AbstractMatrix{Float32}` before solving.")
+        end
+    end
+
 
     # Guard against type mismatch for user-specified reltol/abstol
     reltol = real(eltype(A))(reltol)
@@ -66,6 +126,14 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
 
     return solver
 end
+
+
+"""
+    default_algtype(prob)
+
+Get the default algorithm type for a given input matrix.
+"""
+default_algtype(::NCMProblem) = Newton
 
 
 """

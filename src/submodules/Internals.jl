@@ -8,6 +8,7 @@ export
     rand_negdef,
     issquare,
     require_square,
+    require_matrix,
     diagonals_are_one,
     constrained_to_pm_one,
     ispossemidef,
@@ -16,6 +17,8 @@ export
     clampcor,
     clampcor!,
     setdiag!,
+    sym_uplo,
+    char_uplo,
     symmetric!,
     corconstrain!,
     cov2cor,
@@ -67,6 +70,13 @@ function require_square(X::AbstractMatrix)
 end
 
 @noinline throw_square() = throw(DimensionMismatch("Matrix required to be square"))
+
+
+function require_matrix(::T) where T
+    throw(ArgumentError("Input required to be an AbstractMatrix. Got $T instead"))
+end
+
+require_matrix(::AbstractMatrix) = nothing
 
 
 function diagonals_are_one(X::AbstractMatrix{T}) where {T<:Real}
