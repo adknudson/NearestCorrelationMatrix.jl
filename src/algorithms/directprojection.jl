@@ -13,14 +13,45 @@ struct DirectProjection{A, K} <: NCMAlgorithm
     kwargs::K
 end
 
-function DirectProjection(args...; tau::Real=eps(), kwargs...)
+function DirectProjection(args...; tau::Real=1e-6, kwargs...)
     return DirectProjection(tau, args, kwargs)
 end
 
 autotune(::Type{DirectProjection}, prob::NCMProblem) = _autotune(DirectProjection, prob.A)
+
 _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float64}) = DirectProjection(tau=1e-12)
-_autotune(::Type{DirectProjection}, A::AbstractMatrix{Float32}) = DirectProjection(tau=min(eps(Float32) * size(A,1), Float32(1e-4)))
-_autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16}) = DirectProjection(tau=min(eps(Float16) * size(A,1), Float16(1e-2)))
+
+function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float32})
+    n = size(A, 1)
+
+    tau = if n ≤ 25
+        1e-6
+    elseif n ≤ 100
+        5e-6
+    elseif n ≤ 500
+        1e-5
+    else
+        5e-5
+    end
+
+    return DirectProjection(tau=tau)
+end
+
+function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16})
+    n = size(A, 1)
+
+    tau = if n ≤ 10
+        5e-3
+    elseif n ≤ 25
+        1e-2
+    elseif n ≤ 50
+        2.5e-2
+    else
+        5e-2
+    end
+
+    return DirectProjection(tau=tau)
+end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
     X = solver.A
