@@ -4,13 +4,20 @@
 The alternating projections algorithm developed by Nick Higham.
 """
 struct AlternatingProjections{A, K} <: NCMAlgorithm
+    tau::Real
     args::A
     kwargs::K
 end
 
-AlternatingProjections(args...; kwargs...) = AlternatingProjections(args, kwargs)
+function AlternatingProjections(args...; tau::Real=0, kwargs...)
+    return AlternatingProjections(tau, args, kwargs)
+end
+
 
 default_iters(::AlternatingProjections, A) = clamp(size(A,1), 20, 200)
+modifies_in_place(::AlternatingProjections) = true
+supports_float16(::AlternatingProjections) = true
+supports_symmetric(::AlternatingProjections) = false
 
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)
@@ -49,6 +56,12 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
 
         i += 1
     end
+
+    # do one more projection to ensure PSD
+    tau = convert(T, alg.tau)
+    project_psd!(Y, tau)
+    cov2cor!(Y)
+    i += 1
 
     return build_ncm_solution(alg, Y, resid, solver; iters=i)
 end
