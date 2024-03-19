@@ -3,6 +3,9 @@ using NearestCorrelationMatrix
 using NearestCorrelationMatrix.Internals: get_negdef_matrix
 
 
+include("test_macros.jl")
+
+
 @testset "Common Solve API" begin
     r0 = get_negdef_matrix(Float64)
 
