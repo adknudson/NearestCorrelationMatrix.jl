@@ -21,14 +21,14 @@ function NearestCorrelationMatrix.solve!(solver::NCMSolver, alg::JuMPAlgorithm)
         @warn "The model was not solved correctly"
     end
 
-    return build_ncm_solution(alg, JuMP.value(model[:X]), nothing, solver; stats=model)
+    return build_ncm_solution(alg, JuMP.value(model[:X]), nothing, solver)
 end
 
 
 function NearestCorrelationMatrix.init_cacheval(alg::JuMPAlgorithm, A, maxiters, abstol, reltol, verbose)
     n = size(A, 1)
 
-    model = JuMP.Model(alg.Optimizer)
+    model = JuMP.Model(alg.optimizer)
 
 	@variable(model, X[1:n, 1:n], PSD)
 
