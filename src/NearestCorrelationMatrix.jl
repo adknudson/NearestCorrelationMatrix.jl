@@ -27,6 +27,7 @@ include("simple_interface.jl")
 include("algorithms/newton.jl")
 include("algorithms/directprojection.jl")
 include("algorithms/alternatingprojections.jl")
+include("algorithms/extension_algs.jl")
 
 
 using PrecompileTools: @compile_workload
@@ -52,6 +53,7 @@ export
     autotune,
     Newton,
     AlternatingProjections,
-    DirectProjection
+    DirectProjection,
+    JuMPAlgorithm
 
 end
