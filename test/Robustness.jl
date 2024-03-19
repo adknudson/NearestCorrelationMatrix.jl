@@ -59,7 +59,7 @@ function test_robust(algtype, T; cutoff=Inf, test_pd=false, kwargs...)
 end
 
 
-@testset verbose=true failfast=true "Robustness - PosSemiDef" begin
+@testset verbose=true "Robustness - PosSemiDef" begin
     test_robust(Newton, Float64; cutoff=1000)
     test_robust(Newton, Float32; cutoff=1000)
     test_robust(Newton, Float16; cutoff=1000, force_f16=true)
@@ -74,7 +74,7 @@ end
 end
 
 
-@testset verbose=true failfast=true "Robustness - PosDef" begin
+@testset verbose=true "Robustness - PosDef" begin
     test_robust(Newton, Float64; cutoff=1000, test_pd=true)
     test_robust(Newton, Float32; cutoff=1000, test_pd=true)
     test_robust(Newton, Float16; cutoff=1000, test_pd=true, force_f16=true)
