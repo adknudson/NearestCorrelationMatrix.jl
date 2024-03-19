@@ -1,14 +1,8 @@
-using Test
-using Aqua
+using SafeTestsets
 
-
-include("test_macros.jl")
-
-include("Internals.jl")
-include("CommonSolveApi.jl")
-include("SimpleApi.jl")
-include("Algorithms.jl")
-# include("Robustness.jl")
-
-
-Aqua.test_all(NearestCorrelationMatrix)
+@time @safetestset "Quality Assurance" include("qa.jl")
+@time @safetestset "Utilities" include("internals.jl")
+@time @safetestset "Common Solve API" include("api.jl")
+@time @safetestset "Simple API" include("simple_api.jl")
+@time @safetestset "Algorithms" include("algorithms.jl")
+@time @safetestset "JuMP Extension" include("jump.jl")
