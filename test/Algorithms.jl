@@ -2,7 +2,10 @@ using Test
 using NearestCorrelationMatrix
 using NearestCorrelationMatrix: supports_float16
 using NearestCorrelationMatrix.Internals
-using LinearAlgebra: isposdef, Symmetric
+using LinearAlgebra: issymmetric, isposdef, Symmetric
+
+
+include("test_macros.jl")
 
 
 macro test_iscorrelation(ex)
