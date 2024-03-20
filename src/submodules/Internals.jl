@@ -25,7 +25,6 @@ export
     cov2cor!,
     cor2cov,
     cor2cov!,
-    checkmat!,
     eigen_sym,
     project_psd!,
     project_psd
@@ -282,25 +281,6 @@ function cor2cov!(C::Symmetric{T}, s::AbstractVector{T}) where {T<:Real}
     symmetric!(C.data)
     cor2cov!(C.data, s)
     return C
-end
-
-
-"""
-    checkmat!(X)
-
-Check the properties of the input matrix and prepare it for the nearest correlation algorithm.
-This checks that the matrix is square (required) and symmetric (optional). If the matrix is
-not symmetric, then it is replaced with `(X + X') / 2`.
-"""
-function checkmat!(X::AbstractMatrix{T}; warn::Bool=false) where {T<:Real}
-    require_square(X)
-
-    if !issymmetric(X)
-        warn && @warn "The input matrix is not symmetric. Replacing with (X + X') / 2"
-        X .= (X + X') / 2
-    end
-
-    return X
 end
 
 

@@ -152,18 +152,6 @@ supported_types = (Float64, Float32, Float16)
             @test issymmetric(sym_mat)
             @test diagonals_are_one(sym_mat)
             @test constrained_to_pm_one(sym_mat)
-
-
-            # checkmat!
-            x = 2 * rand(T, 10, 10) .- one(T)
-            @test_nowarn checkmat!(x; warn=false)
-            @test issymmetric(x) == true
-
-            x = 2 * rand(T, 10, 10) .- one(T)
-            @test_warn "The input matrix is not symmetric. Replacing with (X + X') / 2" checkmat!(x; warn=true)
-
-            x = 2 * rand(T, 10, 9) .- one(T)
-            @test_throws Exception checkmat!(x)
         end
     end
 end
