@@ -30,12 +30,10 @@ include("algorithms/extension_algs.jl")
 
 
 PrecompileTools.@compile_workload begin
-    for T in (Float64, Float32)
-        A = rand(T, 4, 4)
+        A = rand(Float64, 4, 4)
         nearest_cor(A, Newton(); fix_sym=true)
         nearest_cor(A, AlternatingProjections(); fix_sym=true)
         nearest_cor(A, DirectProjection(); fix_sym=true)
-    end
 end
 
 
