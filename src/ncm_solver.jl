@@ -4,47 +4,57 @@
 Common interface for solving NCM problems. Algorithm-specific cache is stored in the
 `cacheval` field.
 
-- `A`: the input matrix
-- `p`: the parameters (currently unused)
-- `alg`: the NCM algorithm to use
-- `cacheval`: algorithm-specific cache
-- `isfresh`: `true` if the cacheval hasn't been set yet
-- `abstol`:
-- `reltol`:
-- `maxiters`:
-- `verbose`:
+- `A`: The input matrix. Must be square. Should be symmetric.
+- `p`: The parameters for the problem. Defaults to `NullParameters`. Currently unused.
+- `alg`: The algorithm used by the solver.
+- `cacheval`: Algorithm-specific cache.
+- `isfresh`: `true` if the cacheval hasn't been set yet.
+- `abstol`: The absolute tolerance. Defaults to `√(eps(eltype(A)))`.
+- `reltol`: The relative tolerance. Defaults to `√(eps(eltype(A)))`.
+- `maxiters`: The number of iterations allowed. Defaults to `size(A,1)`
+- `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
+  Defaults to `false`.
+- `verbose`: Whether to print extra information. Defaults to `false`.
 """
 mutable struct NCMSolver{TA, P, Talg, Tc, Ttol}
-    A::TA         # the input matrix
-    p::P          # parameters
-    alg::Talg     # ncm algorithm
-    cacheval::Tc  # store algorithm cache here
-    isfresh::Bool # false => cacheval is set wrt A, true => update cacheval wrt A
-    abstol::Ttol  # absolute tolerance for convergence
-    reltol::Ttol  # relative tolerance for convergence
-    maxiters::Int # maximum number of iterations
+    A::TA           # the input matrix
+    p::P            # parameters
+    alg::Talg       # ncm algorithm
+    cacheval::Tc    # store algorithm cache here
+    isfresh::Bool   # false => cacheval is set wrt A, true => update cacheval wrt A
+    abstol::Ttol    # absolute tolerance for convergence
+    reltol::Ttol    # relative tolerance for convergence
+    maxiters::Int   # maximum number of iterations
     ensure_pd::Bool # ensures that the resulting matrix is positive definite
     verbose::Bool
 end
 
 
 """
-    init(prob, alg)
+    init(prob, alg, args...; kwargs...)
 
 Initialize the solver with the given algorithm.
 
-## Arguments
+## Keyword Arguments
 
-- `alias_A`
-- `abstol`
-- `reltol`
-- `maxiters`
-- `fix_sym`
-- `convert_f16`
-- `force_f16`
-- `uplo`
-- `ensure_pd`
-- `verbose`
+- `alias_A`: Whether to alias the matrix ``A`` or use a copy by default. When `true`,
+  algorithms that operate in place can save memory by reusing ``A``. Defaults to `true` if
+  the algorithm is known not to modify ``A``, and `false` otherwise.
+- `abstol`: The absolute tolerance. Defaults to `√(eps(eltype(A)))`.
+- `reltol`: The relative tolerance. Defaults to `√(eps(eltype(A)))`.
+- `maxiters`: The number of iterations allowed. Defaults to `size(A,1)`
+- `fix_sym`: If `true`, then makes the input matrix symmetric if it is not already. Defaults
+   to `false`, and init will fail if the input matrix is not symmetric.
+- `uplo`: If `fix_sym` is `true`, then the upper (`:U`) or lower (`:L`) triangle of the
+  input is used to make a symmetric matrix. Defaults to `:U`.
+- `convert_f16`: If the algorithm does not support `Float16` values, then the input matrix
+  will be converted to an `AbstractMatrix{Float32}`. Defaults to `false`, and init will
+  fail if the algorithm does not support `Float16`.
+- `force_f16`: If `true`, then the algorithm will be forced to use the input matrix, even
+  if the algorithm doesn't fully support `Float16` values in a stable way.
+- `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
+  Defaults to `false`.
+- `verbose`: Whether to print extra information. Defaults to `false`.
 """
 function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     alias_A = default_alias_A(alg, prob.A),
@@ -52,9 +62,9 @@ function CommonSolve.init(prob::NCMProblem, alg::NCMAlgorithm, args...;
     reltol = default_tol(real(eltype(prob.A))),
     maxiters::Int = default_iters(alg, prob.A),
     fix_sym::Bool=false,
+    uplo::Symbol=:U,
     convert_f16::Bool=false,
     force_f16::Bool=false,
-    uplo::Symbol=:U,
     ensure_pd::Bool=false,
     verbose::Bool = false,
     kwargs...

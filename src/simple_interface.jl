@@ -1,7 +1,13 @@
 """
-    nearest_cor!(A, alg; kwargs...)
+    nearest_cor!(A, alg=nothing; kwargs...)
 
-Return the nearest positive definite correlation matrix to `A`. This method updates `A` in place.
+Return the nearest positive definite correlation matrix to ``A``.
+This method will overwrite ``A``.
+
+This is a "batteries included" method, and is designed to just work with as little thought
+as possible. Unlike `solve!`, this method will return the nearest correlation matrix
+directly instead of a `NCMSolution` object. Additionally the solution is checked to be
+positive definite, and corrected if it is not.
 
 # Examples
 
@@ -48,7 +54,12 @@ nearest_cor!(A; kwargs...) = nearest_cor!(A, nothing; kwargs...)
 """
     nearest_cor(A, alg; kwargs...)
 
-Return the nearest positive definite correlation matrix to `A`.
+Return the nearest positive definite correlation matrix to ``A``.
+
+This is a "batteries included" method, and is designed to just work with as little thought
+as possible. Unlike `solve!`, this method will return the nearest correlation matrix
+directly instead of a `NCMSolution` object. Additionally the solution is checked to be
+positive definite, and corrected if it is not.
 
 # Examples
 
