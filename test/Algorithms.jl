@@ -8,17 +8,6 @@ using LinearAlgebra: issymmetric, isposdef, Symmetric
 include("test_macros.jl")
 
 
-macro test_iscorrelation(ex)
-    return quote
-        @test issquare($(esc(ex)))
-        @test issymmetric($(esc(ex)))
-        @test diagonals_are_one($(esc(ex)))
-        @test constrained_to_pm_one($(esc(ex)))
-        @test ispossemidef($(esc(ex)))
-    end
-end
-
-
 function test_simple(algtype)
     @testset "$algtype" begin
         r0 = get_negdef_matrix(Float64)

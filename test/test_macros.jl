@@ -1,3 +1,7 @@
+using Test
+using NearestCorrelationMatrix.Internals
+using LinearAlgebra: issymmetric
+
 """
     @test_isdefined expr
 
@@ -58,5 +62,21 @@ macro test_nothrow(ex)
         else
             @test true
         end
+    end
+end
+
+
+"""
+    @test_iscorrelation r
+
+Run all tests for if a matrix is a valid correlation matrix
+"""
+macro test_iscorrelation(ex)
+    return quote
+        @test issquare($(esc(ex)))
+        @test issymmetric($(esc(ex)))
+        @test diagonals_are_one($(esc(ex)))
+        @test constrained_to_pm_one($(esc(ex)))
+        @test ispossemidef($(esc(ex)))
     end
 end
