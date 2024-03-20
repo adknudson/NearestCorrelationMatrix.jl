@@ -1,6 +1,8 @@
 using LinearAlgebra: Symmetric
 
+
 export project_s, project_u
+
 
 """
     project_s(X, WHalf, WHalfInv)

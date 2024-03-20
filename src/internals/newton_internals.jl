@@ -9,8 +9,9 @@ export
     preconditioned_cg!
 
 
-
 """
+    dual_gradient(∇fy, y, λ, P, b)
+
 Compute
 
 ``∇f(y) = diag((A + diag(y))₊) - e``
@@ -37,6 +38,8 @@ end
 
 
 """
+    primal_feasible_solution(X, λ, P, b)
+
 Compute the primal feasible solution using PCA
 
 - `X`: current primal solution
@@ -81,6 +84,8 @@ primal_feasible_solution!(X::Symmetric, args...) = primal_feasible_solution!(X.d
 
 
 """
+    omega_matrix(λ)
+
 Generates the second block of M(y), the essential part of the first-order difference of `d`
 
 - `λ`: the eigenvalues of `X`
@@ -101,7 +106,11 @@ function omega_matrix(λ)
 end
 
 
+"""
+    full_omega_matrix!(Ω, W)
 
+Construct the full `n × n` Ω matrix from the upper right block ``W``.
+"""
 function full_omega_matrix!(Ω, W)
     T = eltype(Ω)
     r = size(W, 1)
@@ -115,12 +124,20 @@ function full_omega_matrix!(Ω, W)
 end
 
 
-perturb(::Type{T}) where {T<:Real} = sqrt(eps(eltype(T))) / 4
+"""
+    perturb(x)
+
+Compute a small perturbation value for the given input.
+"""
+function perturb end
+perturb(::Type{T}) where T = sqrt(eps(eltype(T))) / 4
+perturb(::T) where T = perturb(T)
 perturb(::AbstractArray{T,N}) where {T,N} = perturb(T)
-perturb(::T) where {T<:AbstractFloat} = perturb(T)
 
 
 """
+    jacobian_matrix!(Vd, d, W, P)
+
 Generate the Jacobian product with `d`:
 
 ``F'(y)(d) = V(y)d``
@@ -165,6 +182,8 @@ end
 
 
 """
+    precondition_matrix!(v, W, P, Ω)
+
 Generate the diagonal preconditioner, `v`
 
 - `v`: the diagonal vector to write into
@@ -197,13 +216,15 @@ end
 
 
 """
+    preconditioned_cg!(p, b, v, W, P, tol, maxiters)
+
 - `p`: the solution vector to write into
 - `b`: a vector of (1-τ)'s
 - `v`: the diagonal preconditioner
 - `W`: the matrix returned from `omega_matrix`
 - `P`: the eigenvectors of `X`
 """
-function preconditioned_cg!(p, b, v, W, P, tol, maxiter)
+function preconditioned_cg!(p, b, v, W, P, tol, maxiters)
     T = eltype(p)
     r = copy(b) # initial residual
 
@@ -220,7 +241,7 @@ function preconditioned_cg!(p, b, v, W, P, tol, maxiter)
 
     k = 0
 
-    for k = 1:maxiter
+    for k = 1:maxiters
         if k > 1
             β = rz1 / rz2
             d .= z + β * d

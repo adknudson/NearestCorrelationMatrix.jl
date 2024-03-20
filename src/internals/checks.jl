@@ -6,19 +6,29 @@ export
     require_square,
     require_matrix,
     require_real,
-    diagonals_are_one,
-    constrained_to_pm_one,
+    has_unit_diagonal,
+    constrained_to_pm1,
     ispossemidef,
     isprecorrelation,
     iscorrelation
 
 
+"""
+    issquare(X)
+
+Test whether a matrix is square.
+"""
 function issquare(X::AbstractMatrix)
     m, n = size(X)
     return m == n
 end
 
 
+"""
+    require_square(X)
+
+Require that a matrix is square. Throw an error if it is not.
+"""
 function require_square(X::AbstractMatrix)
     issquare(X) || throw_square()
 end
@@ -26,6 +36,11 @@ end
 @noinline throw_square() = throw(DimensionMismatch("Matrix required to be square"))
 
 
+"""
+    require_matrix(A::Any)
+
+Require that an input be an `AbstractMatrix`. Throw an error if it is not.
+"""
 function require_matrix(::T) where T
     throw(ArgumentError("Input required to be an AbstractMatrix. Got $T instead"))
 end
@@ -33,6 +48,11 @@ end
 require_matrix(::AbstractMatrix) = nothing
 
 
+"""
+    require_real(X)
+
+Require that a matrix has real-valued elements. Throw an error if it does not.
+"""
 function require_real(::AbstractMatrix{T}) where T
     throw(DomainError(T, "Input matrix is required to have real values"))
 end
@@ -40,16 +60,31 @@ end
 require_real(::AbstractMatrix{<:Real}) = nothing
 
 
-function diagonals_are_one(X::AbstractMatrix{T}) where {T<:Real}
+"""
+    has_unit_diagonal(X)
+
+Test whether all the diagonal elements of a matrix are equal to 1.
+"""
+function has_unit_diagonal(X::AbstractMatrix{T}) where T
     return all(==(one(T)), diag(X))
 end
 
 
-function constrained_to_pm_one(X::AbstractMatrix{T}) where {T<:Real}
+"""
+    constrained_to_pm1(X)
+
+Testh whether all elements of a matrix are constrained between -1 and 1.
+"""
+function constrained_to_pm1(X::AbstractMatrix{T}) where T
     return all(x -> -one(T) ≤ x ≤ one(T), X)
 end
 
 
+"""
+    ispossemidef(X, ϵ)
+
+Test whether a matrix is positive semi-definite within machine precision.
+"""
 ispossemidef(X, ϵ=-sqrt(eps(eltype(X)))) = eigmin(X) ≥ ϵ
 
 
@@ -68,8 +103,8 @@ A pre-correlation matrix must:
 function isprecorrelation(X::AbstractMatrix{T}) where {T}
     issquare(X)              || return false
     issymmetric(X)           || return false
-    diagonals_are_one(X)     || return false
-    constrained_to_pm_one(X) || return false
+    has_unit_diagonal(X)     || return false
+    constrained_to_pm1(X) || return false
     return true
 end
 
