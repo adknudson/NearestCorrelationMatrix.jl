@@ -65,27 +65,3 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
 
     return build_ncm_solution(alg, Y, resid, solver; iters=i)
 end
-
-
-"""
-Project `X` onto the set of symmetric positive semi-definite matrices with a W-norm.
-"""
-function project_s(
-    X::AbstractMatrix{T},
-    Whalf::AbstractMatrix{T},
-    Whalfinv::AbstractMatrix{T}
-) where {T<:AbstractFloat}
-    Y = Whalfinv * project_psd(Whalf * X * Whalf) * Whalfinv
-    return Symmetric(Y)
-end
-
-
-
-"""
-Project X onto the set of symmetric matrices with unit diagonal.
-"""
-function project_u(X::AbstractMatrix{T}) where {T<:AbstractFloat}
-    Y = copy(X)
-    setdiag!(Y, one(T))
-    return Symmetric(Y)
-end
