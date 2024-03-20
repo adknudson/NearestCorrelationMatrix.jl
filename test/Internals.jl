@@ -17,8 +17,8 @@ supported_types = (Float64, Float32, Float16)
 
             x = T[one(T) T(0.3); T(0.3) one(T)]
             y = T[nextfloat(one(T)) T(0.3); T(0.3) one(T)]
-            @test diagonals_are_one(x) == true
-            @test diagonals_are_one(y) == false
+            @test has_unit_diagonal(x) == true
+            @test has_unit_diagonal(y) == false
 
 
             r = get_negdef_matrix(T)
@@ -31,9 +31,9 @@ supported_types = (Float64, Float32, Float16)
 
     @testset "Out-of-place Methods" begin
         for T in supported_types
-            # clampcor
+            # clamp_pm1
             x = rand(T) + one(T)
-            @test typeof(clampcor(x)) === T
+            @test typeof(clamp_pm1(x)) === T
 
 
             # cov2cor
@@ -43,13 +43,13 @@ supported_types = (Float64, Float32, Float16)
 
             x = cov2cor(x)
             @test issymmetric(x)
-            @test diagonals_are_one(x)
-            @test constrained_to_pm_one(x)
+            @test has_unit_diagonal(x)
+            @test constrained_to_pm1(x)
 
             sym_mat = cov2cor(sym_mat)
             @test issymmetric(sym_mat)
-            @test diagonals_are_one(sym_mat)
-            @test constrained_to_pm_one(sym_mat)
+            @test has_unit_diagonal(sym_mat)
+            @test constrained_to_pm1(sym_mat)
 
 
             # eigen_sym
@@ -69,9 +69,9 @@ supported_types = (Float64, Float32, Float16)
 
     @testset "In-place Methods" begin
         for T in supported_types
-            # clampcor!
+            # clamp_pm1!
             x = T[-2 1; -1 3]
-            clampcor!(x)
+            clamp_pm1!(x)
             @test all(-one(T) .≤ x .≤ one(T))
 
 
@@ -126,16 +126,13 @@ supported_types = (Float64, Float32, Float16)
             diag_mat = Diagonal(diag(x))
 
             corconstrain!(x)
-            @test diagonals_are_one(x)
-            @test constrained_to_pm_one(x)
+            @test isprecorrelation(x) == true
 
             corconstrain!(sym_mat)
-            @test diagonals_are_one(sym_mat)
-            @test constrained_to_pm_one(sym_mat)
+            @test isprecorrelation(sym_mat) == true
 
             corconstrain!(diag_mat)
-            @test diagonals_are_one(diag_mat)
-            @test constrained_to_pm_one(diag_mat)
+            @test isprecorrelation(diag_mat) == true
 
 
             # cov2cor!
@@ -144,14 +141,10 @@ supported_types = (Float64, Float32, Float16)
             sym_mat = Symmetric(copy(x))
 
             cov2cor!(x)
-            @test issymmetric(x)
-            @test diagonals_are_one(x)
-            @test constrained_to_pm_one(x)
+            @test isprecorrelation(x) == true
 
             cov2cor!(sym_mat)
-            @test issymmetric(sym_mat)
-            @test diagonals_are_one(sym_mat)
-            @test constrained_to_pm_one(sym_mat)
+            @test isprecorrelation(sym_mat) == true
         end
     end
 end

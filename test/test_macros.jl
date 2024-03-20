@@ -75,8 +75,8 @@ macro test_iscorrelation(ex)
     return quote
         @test issquare($(esc(ex)))
         @test issymmetric($(esc(ex)))
-        @test diagonals_are_one($(esc(ex)))
-        @test constrained_to_pm_one($(esc(ex)))
+        @test has_unit_diagonal($(esc(ex)))
+        @test constrained_to_pm1($(esc(ex)))
         @test ispossemidef($(esc(ex)))
     end
 end
