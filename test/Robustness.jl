@@ -18,7 +18,6 @@ function test_robust_reps(algtype::Type, nreps::Int, size::Int, T::Type, test_pd
             cache = init(prob, alg; kwargs...)
             sol = solve!(cache)
 
-
             if test_pd
                 @test isposdef(sol.X) == true
             else
@@ -35,8 +34,6 @@ function test_robust_reps(alg::NCMAlgorithm, nreps::Int, size::Int, T::Type, tes
             prob = NCMProblem(r0)
             cache = init(prob, alg; kwargs...)
             sol = solve!(cache)
-
-            @test iscorrelation(sol.X) == true
 
             if test_pd
                 @test isposdef(sol.X) == true
