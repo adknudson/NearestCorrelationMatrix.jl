@@ -8,7 +8,6 @@ export
     clamp_pm1!,
     setdiag!,
     sym_uplo,
-    char_uplo,
     symmetric!,
     corconstrain!,
     cov2cor,

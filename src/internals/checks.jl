@@ -16,12 +16,10 @@ export
 """
     issquare(X)
 
-Test whether a matrix is square.
+Test whether a value is a square matrix.
 """
-function issquare(X::AbstractMatrix)
-    m, n = size(X)
-    return m == n
-end
+issquare(::Any) = false
+issquare(X::AbstractMatrix) = ==(size(X)...)
 
 
 """
@@ -29,23 +27,18 @@ end
 
 Require that a matrix is square. Throw an error if it is not.
 """
-function require_square(X::AbstractMatrix)
-    issquare(X) || throw_square()
-end
-
+require_square(X) = issquare(X) || throw_square()
 @noinline throw_square() = throw(DimensionMismatch("Matrix required to be square"))
 
 
 """
-    require_matrix(A::Any)
+    require_matrix(X)
 
 Require that an input be an `AbstractMatrix`. Throw an error if it is not.
 """
-function require_matrix(::T) where T
-    throw(ArgumentError("Input required to be an AbstractMatrix. Got $T instead"))
-end
-
+require_matrix(::Any) = throw_matrix()
 require_matrix(::AbstractMatrix) = nothing
+@noinline throw_matrix() = throw(ArgumentError("Input required to be an `AbstractMatrix`"))
 
 
 """
@@ -53,11 +46,9 @@ require_matrix(::AbstractMatrix) = nothing
 
 Require that a matrix has real-valued elements. Throw an error if it does not.
 """
-function require_real(::AbstractMatrix{T}) where T
-    throw(DomainError(T, "Input matrix is required to have real values"))
-end
-
+require_real(::AbstractMatrix{T}) where T = throw_real(T)
 require_real(::AbstractMatrix{<:Real}) = nothing
+@noinline throw_real(T) = throw(DomainError(T, "Matrix required to have real values"))
 
 
 """
@@ -65,17 +56,16 @@ require_real(::AbstractMatrix{<:Real}) = nothing
 
 Test whether all the diagonal elements of a matrix are equal to 1.
 """
-function has_unit_diagonal(X::AbstractMatrix{T}) where T
-    return all(==(one(T)), diag(X))
-end
+has_unit_diagonal(X::AbstractMatrix{T}) where T = all(==(one(T)), diag(X))
 
 
 """
     constrained_to_pm1(X)
 
-Testh whether all elements of a matrix are constrained between -1 and 1.
+Testh whether all elements of ``X`` are constrained between -1 and 1.
 """
-function constrained_to_pm1(X::AbstractMatrix{T}) where T
+function constrained_to_pm1(X)
+    T = eltype(X)
     return all(x -> -one(T) ≤ x ≤ one(T), X)
 end
 
@@ -100,10 +90,11 @@ A pre-correlation matrix must:
 - be constrained to ±1
 - have diagonals equal to 1
 """
-function isprecorrelation(X::AbstractMatrix{T}) where {T}
-    issquare(X)              || return false
-    issymmetric(X)           || return false
-    has_unit_diagonal(X)     || return false
+function isprecorrelation(X)
+    X isa AbstractMatrix  || return false
+    issquare(X)           || return false
+    issymmetric(X)        || return false
+    has_unit_diagonal(X)  || return false
     constrained_to_pm1(X) || return false
     return true
 end
@@ -123,6 +114,6 @@ A correlation matrix must:
 - have diagonals equal to 1
 - be positive definite
 """
-function iscorrelation(X::AbstractMatrix{T}) where {T<:Real}
+function iscorrelation(X)
     return isprecorrelation(X) && ispossemidef(X)
 end
