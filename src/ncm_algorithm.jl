@@ -118,5 +118,5 @@ function construct_algorithm(algtype::Type{<:NCMAlgorithm})
         return algtype()
     end
 
-    throw(MethodError(algtype, "$algtype does not support parameterless construction."))
+    error("$algtype does not support parameterless construction")
 end
