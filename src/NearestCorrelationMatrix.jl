@@ -4,12 +4,11 @@ module NearestCorrelationMatrix
 import PrecompileTools
 
 PrecompileTools.@recompile_invalidations begin
-    include("submodules/Internals.jl")
+    include("Internals/Internals.jl")
     using .Internals
 
     using LinearAlgebra
     using CommonSolve: CommonSolve, init, solve, solve!
-    using Tullio
     using UnPack
 end
 
@@ -30,9 +29,7 @@ include("algorithms/alternatingprojections.jl")
 include("algorithms/extension_algs.jl")
 
 
-using PrecompileTools: @compile_workload
-
-@compile_workload begin
+PrecompileTools.@compile_workload begin
     for T in (Float64, Float32)
         A = rand(T, 4, 4)
         nearest_cor(A, Newton(); fix_sym=true)
@@ -43,17 +40,26 @@ end
 
 
 export
+    # domain types
     NCMProblem,
     NCMSolver,
     NCMAlgorithm,
     NCMSolution,
     NullParameters,
-    init, solve, solve!,
-    nearest_cor, nearest_cor!,
+    # helpers
     autotune,
+    # common solve interface
+    init,
+    solve,
+    solve!,
+    # simple interface
+    nearest_cor,
+    nearest_cor!,
+    # algorithms
     Newton,
     AlternatingProjections,
     DirectProjection,
     JuMPAlgorithm
+
 
 end
