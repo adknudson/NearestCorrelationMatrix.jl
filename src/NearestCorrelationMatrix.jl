@@ -4,7 +4,7 @@ module NearestCorrelationMatrix
 import PrecompileTools
 
 PrecompileTools.@recompile_invalidations begin
-    include("Internals/Internals.jl")
+    include("internals/Internals.jl")
     using .Internals
 
     using LinearAlgebra
