@@ -18,6 +18,7 @@ default_iters(::AlternatingProjections, A) = clamp(size(A,1), 20, 200)
 modifies_in_place(::AlternatingProjections) = true
 supports_float16(::AlternatingProjections) = true
 supports_symmetric(::AlternatingProjections) = false
+supports_parameterless_construction(::Type{AlternatingProjections}) = true
 
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)

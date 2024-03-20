@@ -212,6 +212,7 @@ default_iters(::MyAlgorithm, A) = size(A, 1)
 modifies_in_place(::MyAlgorithm) = true
 supports_float16(::MyAlgorithm) = false
 supports_symmetric(::MyAlgorithm) = false
+supports_parameterless_construction(::MyAlgorithm) = false
 ```
 
 

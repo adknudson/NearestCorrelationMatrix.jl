@@ -35,7 +35,7 @@ julia> prob = NCMProblem(r);
 julia> alg = autotune(Newton, prob);
 ```
 """
-autotune(algtype::Type{<:NCMAlgorithm}, ::NCMProblem) = algtype()
+autotune(algtype::Type{<:NCMAlgorithm}, ::NCMProblem) = construct_algorithm(algtype)
 
 
 """
@@ -97,3 +97,26 @@ Trait for if an algorithm supports `LinearAlgebra.Symmetric` matrix type (defaul
 If `false`, then a copy using the upper or lower matrix is used instead.
 """
 supports_symmetric(::NCMAlgorithm) = false
+
+
+"""
+    supports_parameterless_construction(alg)
+
+Trait for if an algorithm can be constructed without any parameters (default is `false`).
+"""
+supports_parameterless_construction(::Type{NCMAlgorithm}) = false
+
+
+"""
+    construct_algorithm(algtype)
+
+Construct the algorithm without ant parameters. Throws an error if the algtype does not
+support parameterless construction.
+"""
+function construct_algorithm(algtype::Type{NCMAlgorithm})
+    if supports_parameterless_construction(algtype)
+        return algtype()
+    end
+
+    throw(MethodError(algtype, "$algtype does not support parameterless construction."))
+end

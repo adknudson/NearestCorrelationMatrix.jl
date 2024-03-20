@@ -21,6 +21,7 @@ end
 modifies_in_place(::DirectProjection) = true
 supports_symmetric(::DirectProjection) = true
 supports_float16(::DirectProjection) = true
+supports_parameterless_construction(::Type{DirectProjection}) = true
 
 
 autotune(::Type{DirectProjection}, prob::NCMProblem) = _autotune(DirectProjection, prob.A)
