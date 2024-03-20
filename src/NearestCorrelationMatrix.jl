@@ -16,10 +16,10 @@ end
 struct NullParameters end
 
 
-include("ncm_problem.jl")
-include("ncm_algorithm.jl")
-include("ncm_solver.jl")
-include("ncm_solution.jl")
+include("problem.jl")
+include("algorithm.jl")
+include("solver.jl")
+include("solution.jl")
 
 include("simple_interface.jl")
 
