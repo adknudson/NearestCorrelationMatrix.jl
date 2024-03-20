@@ -10,7 +10,10 @@ using LinearAlgebra
 
 
 NearestCorrelationMatrix.default_iters(::JuMPAlgorithm, ::Any) = 0
+NearestCorrelationMatrix.supports_float16(::JuMPAlgorithm) = true
 NearestCorrelationMatrix.modifies_in_place(::JuMPAlgorithm) = false
+NearestCorrelationMatrix.supports_symmetric(::JuMPAlgorithm) = true
+NearestCorrelationMatrix.supports_parameterless_construction(::Type{JuMPAlgorithm}) = false
 
 
 function NearestCorrelationMatrix.solve!(solver::NCMSolver, alg::JuMPAlgorithm)

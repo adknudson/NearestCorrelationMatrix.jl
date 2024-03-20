@@ -14,6 +14,8 @@ include("test_macros.jl")
     @test_isdefined JuMPAlgorithm
     @test_isimplemented JuMPAlgorithm(COSMO.Optimizer)
 
+    @test_throws MethodError autotune(JuMPAlgorithm, prob)
+
     optimizer = optimizer_with_attributes(
 		COSMO.Optimizer,
 		MOI.Silent() => true,
