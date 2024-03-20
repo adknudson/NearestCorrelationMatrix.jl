@@ -104,7 +104,7 @@ supports_symmetric(::NCMAlgorithm) = false
 
 Trait for if an algorithm can be constructed without any parameters (default is `false`).
 """
-supports_parameterless_construction(::Type{NCMAlgorithm}) = false
+supports_parameterless_construction(::Type{<:NCMAlgorithm}) = false
 
 
 """
@@ -113,7 +113,7 @@ supports_parameterless_construction(::Type{NCMAlgorithm}) = false
 Construct the algorithm without ant parameters. Throws an error if the algtype does not
 support parameterless construction.
 """
-function construct_algorithm(algtype::Type{NCMAlgorithm})
+function construct_algorithm(algtype::Type{<:NCMAlgorithm})
     if supports_parameterless_construction(algtype)
         return algtype()
     end
