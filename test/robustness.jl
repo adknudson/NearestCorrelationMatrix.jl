@@ -9,7 +9,7 @@ using JuMP, COSMO
 include("test_macros.jl");
 
 
-function test_robust_reps(algtype::Type, nreps::Int, size::Int, T::Type, test_pd::Bool; kwargs...)
+function test_robust_reps(algtype::Type, nreps, size, T, test_pd; kwargs...)
     @testset "$(size)×$(size)" begin
         for _ in 1:nreps
             r0 = rand_negdef(T, size)
@@ -27,7 +27,7 @@ function test_robust_reps(algtype::Type, nreps::Int, size::Int, T::Type, test_pd
     end
 end
 
-function test_robust_reps(alg::NCMAlgorithm, nreps::Int, size::Int, T::Type, test_pd::Bool; kwargs...)
+function test_robust_reps(alg::NCMAlgorithm, nreps, size, T, test_pd; kwargs...)
     @testset "$(size)×$(size)" begin
         for _ in 1:nreps
             r0 = rand_negdef(T, size)
@@ -45,7 +45,7 @@ function test_robust_reps(alg::NCMAlgorithm, nreps::Int, size::Int, T::Type, tes
 end
 
 
-function test_robust(algtype::Type, T::Type; cutoff=Inf, test_pd=false, kwargs...)
+function test_robust(algtype::Type, T; cutoff=Inf, test_pd=false, kwargs...)
     @testset "$algtype - $T" begin
         cutoff < 10 && return
         test_robust_reps(algtype, 100, 10, T, test_pd; kwargs...)
@@ -64,7 +64,7 @@ function test_robust(algtype::Type, T::Type; cutoff=Inf, test_pd=false, kwargs..
     end
 end
 
-function test_robust(alg::NCMAlgorithm, T::Type; cutoff=Inf, test_pd=false, kwargs...)
+function test_robust(alg::NCMAlgorithm, T; cutoff=Inf, test_pd=false, kwargs...)
     @testset "$(alg_name(alg)) - $T" begin
         cutoff < 10 && return
         test_robust_reps(alg, 100, 10, T, test_pd; kwargs...)
