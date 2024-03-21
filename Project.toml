@@ -18,9 +18,9 @@ NCMJuMPExt = "JuMP"
 
 [compat]
 Aqua = "0.8"
-COSMO = "0.8.3"
+COSMO = "0.8"
 CommonSolve = "0.2"
-JuMP = "1.20"
+JuMP = "1.19"
 LinearAlgebra = "1.10"
 PrecompileTools = "1.2"
 SafeTestsets = "0.1"
