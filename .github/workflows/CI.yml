@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches:
@@ -11,12 +10,6 @@ on:
       - main
     paths-ignore:
       - 'docs/**'
-
-# needed to allow julia-actions/cache to delete old caches that it has created
-permissions:
-  actions: write
-  contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,7 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         julia-version: ['1', 'nightly']
-
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
@@ -34,9 +26,3 @@ jobs:
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
-      - uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: src, ext
-      - uses: codecov/codecov-action@v4
-        with:
-          file: lcov.info
