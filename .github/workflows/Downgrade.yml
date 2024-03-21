@@ -1,11 +1,11 @@
-name: CI
+name: Downgrade
 on:
-  push:
+  pull_request:
     branches:
       - main
     paths-ignore:
       - 'docs/**'
-  pull_request:
+  push:
     branches:
       - main
     paths-ignore:
@@ -14,15 +14,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        julia-version: ['1']
+        version: ['1']
+        group:
+          - Core
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ matrix.julia-version }}
-          arch: x64
-      - uses: julia-actions/cache@v1
+          version: ${{ matrix.version }}
+      - uses: julia-actions/julia-downgrade-compat@v1
+        with:
+          skip: Pkg,TOML,Aqua,COSMO,SafeTestsets
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
