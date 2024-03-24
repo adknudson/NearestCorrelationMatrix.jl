@@ -5,7 +5,6 @@ The abstract type of all NCM problem solving algorithms.
 """
 abstract type NCMAlgorithm end
 
-
 """
     alg_name(alg)
 
@@ -13,7 +12,6 @@ Get the simple name for the NCM algorithm type.
 """
 alg_name(::Type{T}) where {T<:NCMAlgorithm} = (isempty(T.parameters) ? T : T.name.wrapper)
 alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
-
 
 """
     autotune(algtype, prob)
@@ -37,12 +35,10 @@ julia> alg = autotune(Newton, prob);
 """
 autotune(algtype::Type{<:NCMAlgorithm}, ::NCMProblem) = construct_algorithm(algtype)
 
-
 """
     init_cacheval(alg, args...)
 """
 init_cacheval(::NCMAlgorithm, args...) = nothing
-
 
 """
     default_tol(::Type)
@@ -55,12 +51,10 @@ default_tol(::Type{Complex{T}}) where {T} = sqrt(eps(T))
 default_tol(::Type{<:Rational}) = 0
 default_tol(::Type{<:Integer}) = 0
 
-
 """
     default_iters(alg, A)
 """
 default_iters(::NCMAlgorithm, A::Any) = size(A, 1)
-
 
 """
     default_alias_A(alg, A)
@@ -72,14 +66,12 @@ is `false`.
 """
 default_alias_A(alg::NCMAlgorithm, ::Any) = !modifies_in_place(alg)
 
-
 """
     modifies_in_place(alg)
 
 Trait for if an algorithm modifies the input in place or not. `true` by default.
 """
 modifies_in_place(::NCMAlgorithm) = true
-
 
 """
     supports_float16(alg)
@@ -89,7 +81,6 @@ instabilities with Float16 values, so the default is `false`.
 """
 supports_float16(::NCMAlgorithm) = false
 
-
 """
     supports_symmetric(alg)
 
@@ -98,14 +89,12 @@ If `false`, then a copy using the upper or lower matrix is used instead.
 """
 supports_symmetric(::NCMAlgorithm) = false
 
-
 """
     supports_parameterless_construction(alg)
 
 Trait for if an algorithm can be constructed without any parameters (default is `false`).
 """
 supports_parameterless_construction(::Type{<:NCMAlgorithm}) = false
-
 
 """
     construct_algorithm(algtype)
@@ -118,5 +107,5 @@ function construct_algorithm(algtype::Type{<:NCMAlgorithm})
         return algtype()
     end
 
-    error("$algtype does not support parameterless construction")
+    return error("$algtype does not support parameterless construction")
 end

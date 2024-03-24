@@ -22,19 +22,18 @@ end
 
 function Newton(
     args...;
-    tau::Real = eps(),
-    tol_cg::Real = 1e-2,
-    tol_ls::Real = 1e-4,
-    iter_cg::Int = 200,
-    iter_ls::Int = 20,
+    tau::Real=eps(),
+    tol_cg::Real=1e-2,
+    tol_ls::Real=1e-4,
+    iter_cg::Int=200,
+    iter_ls::Int=20,
     kwargs...
 )
     return Newton(tau, tol_cg, tol_ls, iter_cg, iter_ls, args, kwargs)
 end
 
-
 autotune(::Type{Newton}, prob::NCMProblem) = _autotune(Newton, prob.A)
-_autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(tau=1e-12)
+_autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(; tau=1e-12)
 
 function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
     n = size(A, 1)
@@ -51,7 +50,7 @@ function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
         5e-5
     end
 
-    Newton(tau=tau)
+    return Newton(; tau=tau)
 end
 
 function _autotune(::Type{Newton}, A::AbstractMatrix{Float16})
@@ -67,15 +66,13 @@ function _autotune(::Type{Newton}, A::AbstractMatrix{Float16})
         1e-1
     end
 
-    Newton(tau=tau)
+    return Newton(; tau=tau)
 end
-
 
 modifies_in_place(::Newton) = false
 supports_symmetric(::Newton) = true
 supports_float16(::Newton) = true
 supports_parameterless_construction(::Newton) = true
-
 
 function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
     G = Symmetric(solver.A)

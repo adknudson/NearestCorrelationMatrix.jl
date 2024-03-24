@@ -1,6 +1,5 @@
 module NCMJuMPExt
 
-
 using NearestCorrelationMatrix
 using NearestCorrelationMatrix: build_ncm_solution
 using NearestCorrelationMatrix.Internals: project_psd!, cov2cor!
@@ -8,13 +7,11 @@ using NearestCorrelationMatrix.Internals: project_psd!, cov2cor!
 using JuMP
 using LinearAlgebra
 
-
 NearestCorrelationMatrix.default_iters(::JuMPAlgorithm, ::Any) = 0
 NearestCorrelationMatrix.supports_float16(::JuMPAlgorithm) = true
 NearestCorrelationMatrix.modifies_in_place(::JuMPAlgorithm) = false
 NearestCorrelationMatrix.supports_symmetric(::JuMPAlgorithm) = true
 NearestCorrelationMatrix.supports_parameterless_construction(::Type{JuMPAlgorithm}) = false
-
 
 function NearestCorrelationMatrix.solve!(solver::NCMSolver, alg::JuMPAlgorithm)
     model = solver.cacheval
@@ -32,25 +29,26 @@ function NearestCorrelationMatrix.solve!(solver::NCMSolver, alg::JuMPAlgorithm)
     return build_ncm_solution(alg, X, nothing, solver)
 end
 
-
-function NearestCorrelationMatrix.init_cacheval(alg::JuMPAlgorithm, A, maxiters, abstol, reltol, verbose)
+function NearestCorrelationMatrix.init_cacheval(
+    alg::JuMPAlgorithm, A, maxiters, abstol, reltol, verbose
+)
     n = size(A, 1)
 
     model = JuMP.Model(alg.optimizer)
 
-	@variable(model, X[1:n, 1:n], PSD)
+    @variable(model, X[1:n, 1:n], PSD)
 
-	v = vec(A)
-	q = -v
-	r = 0.5 * dot(v, v)
-	x = vec(X)
-	@objective(model, Min, 0.5 * dot(x, x) + dot(q, x) + r)
+    v = vec(A)
+    q = -v
+    r = 0.5 * dot(v, v)
+    x = vec(X)
+    @objective(model, Min, 0.5 * dot(x, x) + dot(q, x) + r)
 
-	for i = 1:n
-		@constraint(model, X[i,i] == 1.0)
-	end
+    for i in 1:n
+        @constraint(model, X[i, i] == 1.0)
+    end
 
-	return model
+    return model
 end
 
 end

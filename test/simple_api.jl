@@ -3,9 +3,7 @@ using NearestCorrelationMatrix
 using NearestCorrelationMatrix.Internals: get_negdef_matrix
 using LinearAlgebra
 
-
 include("test_macros.jl")
-
 
 @testset "Simple API" begin
     @test_isdefined nearest_cor
@@ -31,7 +29,7 @@ include("test_macros.jl")
     @test_nothrow nearest_cor!(r)
 
     # Symmetric type input
-    r = Symmetric(rand(4,4))
+    r = Symmetric(rand(4, 4))
     @test_nothrow nearest_cor(r)
     @test_nothrow nearest_cor!(r)
 

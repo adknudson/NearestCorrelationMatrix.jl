@@ -1,8 +1,6 @@
 using LinearAlgebra: Symmetric
 
-
 export project_s, project_u
-
 
 """
     project_s(X, WHalf, WHalfInv)
@@ -13,7 +11,6 @@ function project_s(X, Whalf, Whalfinv)
     Y = Whalfinv * project_psd(Whalf * X * Whalf) * Whalfinv
     return Symmetric(Y)
 end
-
 
 """
     project_u(X)

@@ -12,7 +12,7 @@ Representation of the solution to an NCM problem defined by a `NCMProblem`
 - `solver`: The `NCMSolver` object containing the solver's internal cached variables.
 - `stats`: Statistics of the solver.
 """
-struct NCMSolution{T, R, A, C, S}
+struct NCMSolution{T,R,A,C,S}
     X::T
     resid::R
     alg::A
@@ -21,22 +21,16 @@ struct NCMSolution{T, R, A, C, S}
     stats::S
 end
 
-
 """
     build_ncm_solution(alg, X, resid, solver; iters = 0, stats = nothing)
 
 Build the NCMSolution object from the given arguments.
 """
-function build_ncm_solution(alg, X, resid, solver; iters = 0, stats = nothing)
-    return NCMSolution{typeof(X), typeof(resid), typeof(alg), typeof(solver), typeof(stats)}(
-        X,
-        resid,
-        alg,
-        iters,
-        solver,
-        stats)
+function build_ncm_solution(alg, X, resid, solver; iters=0, stats=nothing)
+    return NCMSolution{typeof(X),typeof(resid),typeof(alg),typeof(solver),typeof(stats)}(
+        X, resid, alg, iters, solver, stats
+    )
 end
-
 
 """
     solve(prob, alg)
@@ -64,7 +58,6 @@ Solve the NCM problem with the default algorithm.
 function CommonSolve.solve(prob::NCMProblem, ::Nothing, args...; kwargs...)
     return solve!(init(prob, nothing, args...; kwargs...))
 end
-
 
 """
     solve!(solver)
