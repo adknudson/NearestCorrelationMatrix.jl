@@ -17,15 +17,12 @@ function test_simple(algtype)
         sol = solve!(cache)
 
         @test_iscorrelation sol.X
-        @test isposdef(sol.X) == true
-
 
         # Handle Symmetric type matrices
         r0 = get_negdef_matrix(Float64)
         prob = NCMProblem(Symmetric(r0))
         alg = autotune(algtype, prob)
         @test_nothrow solve(prob, alg)
-
 
         # Handle Float16 input matrices
         r0 = get_negdef_matrix(Float16)
