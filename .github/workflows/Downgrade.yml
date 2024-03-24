@@ -25,6 +25,6 @@ jobs:
           version: ${{ matrix.version }}
       - uses: julia-actions/julia-downgrade-compat@v1
         with:
-          skip: Pkg,TOML,Aqua,COSMO,SafeTestsets
+          skip: Pkg,TOML,Aqua,JuliaFormatter,COSMO,SafeTestsets
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
