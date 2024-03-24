@@ -19,6 +19,10 @@ supports_float16(::AlternatingProjections) = true
 supports_symmetric(::AlternatingProjections) = false
 supports_parameterless_construction(::Type{AlternatingProjections}) = true
 
+function autotune(::AlternatingProjections, prob::NCMProblem)
+    return AlternatingProjections(; tau=eps(eltype(prob.A)))
+end
+
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)
     Y = solver.A
     n = size(Y, 1)
