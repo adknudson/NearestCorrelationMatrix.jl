@@ -3,9 +3,7 @@ using NearestCorrelationMatrix
 using NearestCorrelationMatrix.Internals
 using JuMP, COSMO
 
-
 include("test_macros.jl")
-
 
 @testset "JuMP Extension" begin
     r0 = get_negdef_matrix(Float64)
@@ -17,9 +15,7 @@ include("test_macros.jl")
     @test_throws Exception autotune(JuMPAlgorithm, prob)
 
     optimizer = optimizer_with_attributes(
-		COSMO.Optimizer,
-		MOI.Silent() => true,
-        "rho" => 1.0
+        COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
     )
     alg = JuMPAlgorithm(optimizer)
 

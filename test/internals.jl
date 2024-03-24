@@ -2,9 +2,7 @@ using Test
 using LinearAlgebra
 using NearestCorrelationMatrix.Internals
 
-
 supported_types = (Float64, Float32, Float16)
-
 
 @testset "Internal Utilities" begin
     @testset "Matrix Properties" begin
@@ -14,12 +12,10 @@ supported_types = (Float64, Float32, Float16)
             @test issquare(sqr_mat) == true
             @test issquare(rect_mat) == false
 
-
             x = T[one(T) T(0.3); T(0.3) one(T)]
             y = T[nextfloat(one(T)) T(0.3); T(0.3) one(T)]
             @test has_unit_diagonal(x) == true
             @test has_unit_diagonal(y) == false
-
 
             r = get_negdef_matrix(T)
             @test iscorrelation(r) == false
@@ -28,13 +24,11 @@ supported_types = (Float64, Float32, Float16)
         end
     end
 
-
     @testset "Out-of-place Methods" begin
         for T in supported_types
             # clamp_pm1
             x = rand(T) + one(T)
             @test typeof(clamp_pm1(x)) === T
-
 
             # cov2cor
             x = get_negdef_matrix(T)
@@ -51,7 +45,6 @@ supported_types = (Float64, Float32, Float16)
             @test has_unit_diagonal(sym_mat)
             @test constrained_to_pm1(sym_mat)
 
-
             # eigen_sym
             x = symmetric!(2 * rand(T, 10, 10) .- one(T))
             sym_mat = Symmetric(x)
@@ -66,14 +59,12 @@ supported_types = (Float64, Float32, Float16)
         end
     end
 
-
     @testset "In-place Methods" begin
         for T in supported_types
             # clamp_pm1!
             x = T[-2 1; -1 3]
             clamp_pm1!(x)
             @test all(-one(T) .≤ x .≤ one(T))
-
 
             # setdiag!
             x = 2 * rand(T, 10, 10) .- one(T)
@@ -88,7 +79,6 @@ supported_types = (Float64, Float32, Float16)
 
             @test_throws Exception setdiag!(x, 3//4)
             @test_throws Exception setdiag!(rect_mat, one(T))
-
 
             # symmetric!
             for uplo in (:U, :L)
@@ -115,7 +105,6 @@ supported_types = (Float64, Float32, Float16)
             symmetric!(sym_mat)
             @test diag_mat isa Diagonal
 
-
             # corconstrain!
             x = T[
                 2.0 0.8 0.1
@@ -133,7 +122,6 @@ supported_types = (Float64, Float32, Float16)
 
             corconstrain!(diag_mat)
             @test isprecorrelation(diag_mat) == true
-
 
             # cov2cor!
             x = get_negdef_matrix(T)

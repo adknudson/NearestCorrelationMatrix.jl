@@ -4,9 +4,7 @@ using NearestCorrelationMatrix: supports_float16
 using NearestCorrelationMatrix.Internals
 using LinearAlgebra: issymmetric, isposdef, Symmetric
 
-
 include("test_macros.jl")
-
 
 function test_simple(algtype)
     @testset "$algtype" begin
@@ -37,8 +35,7 @@ function test_simple(algtype)
     end
 end
 
-
-@testset verbose=true "Simple Tests" begin
+@testset verbose = true "Simple Tests" begin
     test_simple(Newton)
     test_simple(DirectProjection)
     test_simple(AlternatingProjections)
