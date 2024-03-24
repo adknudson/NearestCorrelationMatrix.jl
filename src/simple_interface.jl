@@ -36,20 +36,21 @@ true
 ```
 """
 function nearest_cor!(A, alg; kwargs...)
-    sol = solve(NCMProblem(A), alg;
-        alias_A = true,
+    sol = solve(
+        NCMProblem(A),
+        alg;
+        alias_A=true,
         fix_sym=true,
         convert_f16=true,
         ensure_pd=true,
-        kwargs...)
+        kwargs...
+    )
 
     copyto!(A, sol.X)
     return A
 end
 
 nearest_cor!(A; kwargs...) = nearest_cor!(A, nothing; kwargs...)
-
-
 
 """
     nearest_cor(A, alg; kwargs...)
@@ -88,12 +89,15 @@ true
 ```
 """
 function nearest_cor(A, alg; kwargs...)
-    sol = solve(NCMProblem(A), alg;
-        alias_A = false,
+    sol = solve(
+        NCMProblem(A),
+        alg;
+        alias_A=false,
         fix_sym=true,
         convert_f16=true,
         ensure_pd=true,
-        kwargs...)
+        kwargs...
+    )
 
     return sol.X
 end

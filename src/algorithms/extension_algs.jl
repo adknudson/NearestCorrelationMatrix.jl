@@ -62,7 +62,9 @@ struct JuMPAlgorithm{O,A,K} <: NCMAlgorithm
         if ext === nothing
             error("JuMPAlgorithm requires that JuMP is loaded, i.e. `using JuMP`")
         else
-            return new{typeof(optimizer), typeof(args), typeof(kwargs)}(optimizer, args, kwargs)
+            return new{typeof(optimizer),typeof(args),typeof(kwargs)}(
+                optimizer, args, kwargs
+            )
         end
     end
 end

@@ -1,13 +1,7 @@
 using LinearAlgebra, Tullio
 
-
-export
-    dual_gradient!,
-    primal_feasible_solution!,
-    omega_matrix,
-    precondition_matrix!,
-    preconditioned_cg!
-
+export dual_gradient!,
+    primal_feasible_solution!, omega_matrix, precondition_matrix!, preconditioned_cg!
 
 """
     dual_gradient(∇fy, y, λ, P, b)
@@ -36,7 +30,6 @@ function dual_gradient!(∇fy, y, λ, P, b)
     return fy
 end
 
-
 """
     primal_feasible_solution(X, λ, P, b)
 
@@ -55,18 +48,18 @@ function primal_feasible_solution!(X, λ, P, b)
     if r == 0
         fill!(X, zero(eltype(X)))
     elseif r == 1
-        P1 = @view P[:,1]
+        P1 = @view P[:, 1]
         λ1 = λ[1]
-		mul!(X, P1, P1', λ1, 0)
+        mul!(X, P1, P1', λ1, 0)
     elseif r ≤ s
         Pr = @view P[:, begin:r]
-		λr = sqrt(Diagonal(λ[begin:r]))
-		Q = Pr * λr
+        λr = sqrt(Diagonal(λ[begin:r]))
+        Q = Pr * λr
         mul!(X, Q, Q')
     elseif r < n
         Ps = @view P[:, r+1:end]
-		λs = sqrt(Diagonal(-λ[r+1:end]))
-		Q = Ps * λs
+        λs = sqrt(Diagonal(-λ[r+1:end]))
+        Q = Ps * λs
         mul!(X, Q, Q', 1, 1)
     end
 
@@ -80,8 +73,9 @@ function primal_feasible_solution!(X, λ, P, b)
     return X
 end
 
-primal_feasible_solution!(X::Symmetric, args...) = primal_feasible_solution!(X.data, args...)
-
+function primal_feasible_solution!(X::Symmetric, args...)
+    return primal_feasible_solution!(X.data, args...)
+end
 
 """
     omega_matrix(λ)
@@ -100,11 +94,10 @@ function omega_matrix(λ)
     λr = @view λ[begin:r]
     λs = @view λ[r+1:end]
 
-    @tullio W[i,j] := λr[i] / (λr[i] - λs[j])
+    @tullio W[i, j] := λr[i] / (λr[i] - λs[j])
 
     return W
 end
-
 
 """
     full_omega_matrix!(Ω, W)
@@ -115,14 +108,13 @@ function full_omega_matrix!(Ω, W)
     T = eltype(Ω)
     r = size(W, 1)
 
-    fill!(@view(Ω[begin:r,begin:r]), one(T))
-    fill!(@view(Ω[r+1:end,r+1:end]), zero(T))
+    fill!(@view(Ω[begin:r, begin:r]), one(T))
+    fill!(@view(Ω[r+1:end, r+1:end]), zero(T))
     @view(Ω[begin:r, r+1:end]) .= W
     @view(Ω[r+1:end, begin:r]) .= W'
 
     return Ω
 end
-
 
 """
     perturb(x)
@@ -130,10 +122,9 @@ end
 Compute a small perturbation value for the given input.
 """
 function perturb end
-perturb(::Type{T}) where T = sqrt(eps(eltype(T))) / 4
-perturb(::T) where T = perturb(T)
+perturb(::Type{T}) where {T} = sqrt(eps(eltype(T))) / 4
+perturb(::T) where {T} = perturb(T)
 perturb(::AbstractArray{T,N}) where {T,N} = perturb(T)
-
 
 """
     jacobian_matrix!(Vd, d, W, P)
@@ -151,7 +142,6 @@ function jacobian_matrix!(Vd, d, W, P)
     n = length(d)
     r, s = size(W)
 
-
     if r == n
         Vd .= (1 + perturb(d)) * d
         return Vd
@@ -167,7 +157,7 @@ function jacobian_matrix!(Vd, d, W, P)
 
     Wrs = W .* (Pr' * Diagonal(d) * Ps)
     PW = Pr * Wrs
-    hh = 2 * sum(PW .* Ps, dims=2)
+    hh = 2 * sum(PW .* Ps; dims=2)
 
     if r < s
         PrPr = Pr * Pr'
@@ -179,7 +169,6 @@ function jacobian_matrix!(Vd, d, W, P)
 
     return Vd
 end
-
 
 """
     precondition_matrix!(v, W, P, Ω)
@@ -206,14 +195,13 @@ function precondition_matrix!(v, W, P, Ω)
     Q = P .* P
     M = Ω * Q
 
-    @tullio v[i] = dot(@view(Q[:,i]), @view(M[:,i]))
+    @tullio v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
 
     ϵ = sqrt(eps(T))
     replace!(x -> max(x, ϵ), v)
 
     return v
 end
-
 
 """
     preconditioned_cg!(p, b, v, W, P, tol, maxiters)
@@ -241,7 +229,7 @@ function preconditioned_cg!(p, b, v, W, P, tol, maxiters)
 
     k = 0
 
-    for k = 1:maxiters
+    for k in 1:maxiters
         if k > 1
             β = rz1 / rz2
             d .= z + β * d

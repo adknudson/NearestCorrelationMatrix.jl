@@ -1,6 +1,5 @@
 module NearestCorrelationMatrix
 
-
 using LinearAlgebra
 using CommonSolve: CommonSolve, init, solve, solve!
 using UnPack
@@ -8,9 +7,7 @@ using UnPack
 include("internals/Internals.jl")
 using .Internals
 
-
 struct NullParameters end
-
 
 include("problem.jl")
 include("algorithm.jl")
@@ -24,15 +21,13 @@ include("algorithms/directprojection.jl")
 include("algorithms/alternatingprojections.jl")
 include("algorithms/extension_algs.jl")
 
-
-import PrecompileTools
+using PrecompileTools: PrecompileTools
 PrecompileTools.@compile_workload begin
     A = rand(Float64, 4, 4)
     nearest_cor(A, Newton(); fix_sym=true)
     nearest_cor(A, AlternatingProjections(); fix_sym=true)
     nearest_cor(A, DirectProjection(); fix_sym=true)
 end
-
 
 export
     # domain types
@@ -55,6 +50,5 @@ export
     AlternatingProjections,
     DirectProjection,
     JuMPAlgorithm
-
 
 end
