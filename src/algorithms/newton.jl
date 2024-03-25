@@ -71,7 +71,7 @@ end
 
 modifies_in_place(::Newton) = false
 supports_symmetric(::Newton) = true
-supports_float16(::Newton) = true
+supports_float16(::Newton) = false
 supports_parameterless_construction(::Newton) = true
 
 struct NewtonWorkspace{W}
