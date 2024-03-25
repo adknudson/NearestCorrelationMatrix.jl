@@ -1,4 +1,7 @@
 using LinearAlgebra
+using LinearAlgebra: sorteig!, eigencopy_oftype, eigtype
+
+using FastLapackInterface: LAPACK.syevr!
 
 export get_negdef_matrix,
     rand_negdef,
@@ -250,6 +253,18 @@ function eigen_sym(X::Symmetric{Float16})
 end
 
 eigen_sym(X, uplo=:U) = eigen_sym(Symmetric(X, uplo))
+
+function eigen_sym(ws, X::Symmetric)
+    S = eigtype(eltype(X))
+    return eigen_sym!(ws, eigencopy_oftype(X, S))
+end
+
+function eigen_sym!(ws, X::Symmetric)
+    λ, P = LAPACK.syevr!(ws, 'V', 'A', X.uplo, copy(X.data), 0.0, 0.0, 0, 0, -1.0)
+    reverse!(λ)
+    reverse!(P; dims=2)
+    return Eigen(λ, P)
+end
 
 """
     project_psd!(X, ϵ)
