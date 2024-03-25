@@ -1,5 +1,5 @@
 using LinearAlgebra
-using LinearAlgebra: sorteig!
+using LinearAlgebra: sorteig!, eigencopy_oftype, eigtype
 
 using FastLapackInterface: LAPACK.syevr!
 
@@ -255,12 +255,17 @@ end
 eigen_sym(X, uplo=:U) = eigen_sym(Symmetric(X, uplo))
 
 function eigen_sym(ws, X::AbstractMatrix; sortby::Function=x -> -x)
+    S = eigtype(eltype(X))
+    return eigen_sym!(ws, eigencopy_oftype(X, S); sortby=sortby)
+end
+
+function eigen_sym!(ws, X::AbstractMatrix; sortby::Function=x -> -x)
     λ, P = LAPACK.syevr!(ws, 'V', 'A', 'U', X, 0.0, 0.0, 0, 0, -1.0)
     return Eigen(sorteig!(λ, P, sortby)...)
 end
 
-function eigen_sym(ws, X::Symmetric; sortby::Function=x -> -x)
-    λ, P = LAPACK.syevr!(ws, 'V', 'A', X.uplo, X.data, 0.0, 0.0, 0, 0, -1.0)
+function eigen_sym!(ws, X::Symmetric; sortby::Function=x -> -x)
+    λ, P = LAPACK.syevr!(ws, 'V', 'A', X.uplo, copy(X.data), 0.0, 0.0, 0, 0, -1.0)
     return Eigen(sorteig!(λ, P, sortby)...)
 end
 
