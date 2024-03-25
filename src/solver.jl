@@ -71,7 +71,8 @@ function CommonSolve.init(
     verbose::Bool=false,
     kwargs...
 )
-    @unpack A, p = prob
+    A = prob.A
+    p = prob.p
 
     A = if alias_A
         verbose && println("Aliasing A")

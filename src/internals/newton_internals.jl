@@ -1,7 +1,7 @@
-using LinearAlgebra, Tullio
+using LinearAlgebra
 
 export dual_gradient!,
-    primal_feasible_solution!, omega_matrix, precondition_matrix!, preconditioned_cg!
+    primal_feasible_solution!, omega_matrix!, precondition_matrix!, preconditioned_cg!
 
 """
     dual_gradient(∇fy, y, λ, P, b)
@@ -78,43 +78,40 @@ function primal_feasible_solution!(X::Symmetric, args...)
 end
 
 """
-    omega_matrix(λ)
+    omega_matrix!(Ω, λ)
 
 Generates the second block of M(y), the essential part of the first-order difference of `d`
 
 - `λ`: the eigenvalues of `X`
 """
-function omega_matrix(λ)
-    r = count(>(0), λ)
+function omega_matrix!(Ω, λ)
+    T = eltype(Ω)
     n = length(λ)
-
-    r == 0 && return zeros(eltype(λ), 0, 0)
-    r == n && return ones(eltype(λ), n, n)
+    r = count(>(0), λ)
+    s = n - r
 
     λr = @view λ[begin:r]
     λs = @view λ[r+1:end]
 
-    @tullio W[i, j] := λr[i] / (λr[i] - λs[j])
+    @inbounds for j in 1:r, i in 1:r
+        Ω[i, j] = one(T)
+    end
 
-    return W
+    @inbounds for j in r+1:n, i in r+1:n
+        Ω[i, j] = zero(T)
+    end
+
+    for j in 1:s
+        for i in 1:r
+            w = λr[i] / (λr[i] - λs[j])
+            @inbounds Ω[i, j+r] = w
+            @inbounds Ω[j+r, i] = w
+        end
+    end
+
+    return @view Ω[begin:r, r+1:end]
 end
 
-"""
-    full_omega_matrix!(Ω, W)
-
-Construct the full `n × n` Ω matrix from the upper right block ``W``.
-"""
-function full_omega_matrix!(Ω, W)
-    T = eltype(Ω)
-    r = size(W, 1)
-
-    fill!(@view(Ω[begin:r, begin:r]), one(T))
-    fill!(@view(Ω[r+1:end, r+1:end]), zero(T))
-    @view(Ω[begin:r, r+1:end]) .= W
-    @view(Ω[r+1:end, begin:r]) .= W'
-
-    return Ω
-end
 
 """
     perturb(x)
@@ -171,18 +168,16 @@ function jacobian_matrix!(Vd, d, W, P)
 end
 
 """
-    precondition_matrix!(v, W, P, Ω)
+    precondition_matrix!(v, P, Ω)
 
 Generate the diagonal preconditioner, `v`
 
 - `v`: the diagonal vector to write into
-- `W`: the matrix returned from `omega_matrix`
 - `P`: the eigenvectors of `X`
-- `Ω`: pre-allocated data for the full Omega matrix
+- `Ω`: the matrix returned from `omega_matrix`
 """
-function precondition_matrix!(v, W, P, Ω)
+function precondition_matrix!(v, P, Ω, r)
     T = eltype(P)
-    r = size(W, 1)
     n = size(P, 1)
 
     if r == 0 || r == n
@@ -190,12 +185,12 @@ function precondition_matrix!(v, W, P, Ω)
         return v
     end
 
-    full_omega_matrix!(Ω, W)
-
     Q = P .* P
     M = Ω * Q
 
-    @tullio v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
+    for i in eachindex(v)
+        @inbounds v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
+    end
 
     ϵ = sqrt(eps(T))
     replace!(x -> max(x, ϵ), v)
@@ -209,7 +204,7 @@ end
 - `p`: the solution vector to write into
 - `b`: a vector of (1-τ)'s
 - `v`: the diagonal preconditioner
-- `W`: the matrix returned from `omega_matrix`
+- `W`: the partial matrix returned from `omega_matrix`
 - `P`: the eigenvectors of `X`
 """
 function preconditioned_cg!(p, b, v, W, P, tol, maxiters)

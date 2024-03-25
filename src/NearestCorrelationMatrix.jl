@@ -2,7 +2,7 @@ module NearestCorrelationMatrix
 
 using LinearAlgebra
 using CommonSolve: CommonSolve, init, solve, solve!
-using UnPack
+using FastLapackInterface: HermitianEigenWs
 
 include("internals/Internals.jl")
 using .Internals

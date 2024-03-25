@@ -74,10 +74,28 @@ supports_symmetric(::Newton) = true
 supports_float16(::Newton) = true
 supports_parameterless_construction(::Newton) = true
 
+struct NewtonWorkspace{W}
+    eigWs::W
+end
+
+function init_cacheval(::Newton, A, maxiters, abstol, reltol, verbose)
+    ws = if A isa Symmetric
+        HermitianEigenWs(A.data, vecs=true)
+    elseif A isa Matrix
+        HermitianEigenWs(A, vecs=true)
+    else
+        HermitianEigenWs(Matrix(A), vecs=true)
+    end
+
+    return NewtonWorkspace(ws)
+end
+
 function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
     G = Symmetric(solver.A)
     n = size(G, 1)
     T = eltype(G)
+
+    eigWs = solver.cacheval.eigWs
 
     tau = max(alg.tau, zero(T))
     error_tol = max(eps(T), solver.reltol)
@@ -102,7 +120,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
     # full omega matrix
     Ω = Matrix{T}(undef, n, n)
 
-    λ, P = eigen_sym(X)
+    λ, P = eigen_sym(eigWs, X)
     f0 = dual_gradient!(∇fy, y, λ, P, b0)
     f = f0
     b .= b0 - ∇fy
@@ -121,23 +139,24 @@ function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
 
     k = 0
     while gap > error_tol && norm_b_rel > error_tol && k < solver.maxiters
-        W = omega_matrix(λ)
+        W = omega_matrix!(Ω, λ)
+        r, _ = size(W)
 
-        precondition_matrix!(v, W, P, Ω)
+        precondition_matrix!(v, P, Ω, r)
         preconditioned_cg!(d, b, v, W, P, alg.tol_cg, alg.iter_cg)
 
         slope = dot(∇fy - b0, d)
-        y .= x0 + d
+        y .= x0 .+ d
         X .= G + Diagonal(y)
-        λ, P = eigen_sym(X)
+        λ, P = eigen_sym(eigWs, X)
         f = dual_gradient!(∇fy, y, λ, P, b0)
 
         m = 0
         while (m < alg.iter_ls) && (f > f0 + alg.tol_ls * slope / 2^m + 1e-6)
             m += 1
-            y .= x0 + d / 2^m
+            y .= x0 .+ d / 2^m
             X .= G + Diagonal(y)
-            λ, P = eigen_sym(X)
+            λ, P = eigen_sym(eigWs, X)
             f = dual_gradient!(∇fy, y, λ, P, b0)
         end
 
