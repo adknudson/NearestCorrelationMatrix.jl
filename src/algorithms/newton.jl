@@ -80,11 +80,11 @@ end
 
 function init_cacheval(::Newton, A, maxiters, abstol, reltol, verbose)
     ws = if A isa Symmetric
-        HermitianEigenWs(A.data, vecs=true)
+        HermitianEigenWs(A.data; vecs=true)
     elseif A isa Matrix
-        HermitianEigenWs(A, vecs=true)
+        HermitianEigenWs(A; vecs=true)
     else
-        HermitianEigenWs(Matrix(A), vecs=true)
+        HermitianEigenWs(Matrix(A); vecs=true)
     end
 
     return NewtonWorkspace(ws)

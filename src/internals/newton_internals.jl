@@ -112,7 +112,6 @@ function omega_matrix!(Ω, λ)
     return @view Ω[begin:r, r+1:end]
 end
 
-
 """
     perturb(x)
 
