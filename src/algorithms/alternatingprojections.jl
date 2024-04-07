@@ -19,7 +19,7 @@ supports_float16(::AlternatingProjections) = true
 supports_symmetric(::AlternatingProjections) = false
 supports_parameterless_construction(::Type{AlternatingProjections}) = true
 
-function autotune(::AlternatingProjections, prob::NCMProblem)
+function autotune(::Type{AlternatingProjections}, prob::NCMProblem)
     return AlternatingProjections(; tau=eps(eltype(prob.A)))
 end
 
