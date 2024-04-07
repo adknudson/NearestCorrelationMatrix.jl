@@ -19,6 +19,12 @@ include("test_macros.jl")
     @test_isimplemented init(prob, Newton)
     @test init(prob) isa NCMSolver
 
+    # init with an algtype must return the correct algtype
+    for algtype in (AlternatingProjections, Newton, DirectProjection)
+        solver = init(prob, algtype)
+        @test solver.alg isa algtype
+    end
+
     # variations of solve
     @test_isdefined solve
     @test_isimplemented solve(prob)
