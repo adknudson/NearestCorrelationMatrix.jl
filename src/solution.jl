@@ -27,8 +27,9 @@ end
 Build the NCMSolution object from the given arguments.
 """
 function build_ncm_solution(alg, X, resid, solver; iters=0, stats=nothing)
-    return NCMSolution{typeof(X),typeof(resid),typeof(alg),typeof(solver),typeof(stats)}(
-        Symmetric(X), resid, alg, iters, solver, stats
+    Y = Symmetric(X)
+    return NCMSolution{typeof(Y),typeof(resid),typeof(alg),typeof(solver),typeof(stats)}(
+        Y, resid, alg, iters, solver, stats
     )
 end
 
