@@ -158,8 +158,7 @@ Initialize the algorithm and the solver.
 function CommonSolve.init(
     prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
 )
-    algType = default_algtype(prob)
-    alg = autotune(algType, prob)
+    alg = autotune(algtype, prob)
     return init(prob, alg, args...; kwargs...)
 end
 
@@ -178,7 +177,6 @@ end
 Initialize the solver with the default algorithm.
 """
 function CommonSolve.init(prob::NCMProblem, ::Nothing, args...; kwargs...)
-    algType = default_algtype(prob)
-    alg = autotune(algType, prob)
-    return init(prob, alg, args...; kwargs...)
+    algtype = default_algtype(prob)
+    return init(prob, algtype, args...; kwargs...)
 end
