@@ -17,6 +17,9 @@ function test_simple(algtype)
 
         @test_iscorrelation sol.X
 
+        # Issue #19: Solution must always be Symmetric
+        @test sol.X isa Symmetric
+
         # Handle Symmetric type matrices
         r0 = get_negdef_matrix(Float64)
         prob = NCMProblem(Symmetric(r0))
