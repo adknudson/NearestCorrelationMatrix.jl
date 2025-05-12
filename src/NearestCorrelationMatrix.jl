@@ -19,15 +19,8 @@ include("simple_interface.jl")
 include("algorithms/newton.jl")
 include("algorithms/directprojection.jl")
 include("algorithms/alternatingprojections.jl")
+include("algorithms/accelerated_alternatingprojections.jl")
 include("algorithms/extension_algs.jl")
-
-using PrecompileTools: PrecompileTools
-PrecompileTools.@compile_workload begin
-    A = rand(Float64, 4, 4)
-    nearest_cor(A, Newton(); fix_sym=true)
-    nearest_cor(A, AlternatingProjections(); fix_sym=true)
-    nearest_cor(A, DirectProjection(); fix_sym=true)
-end
 
 export
     # domain types
@@ -48,6 +41,7 @@ export
     # algorithms
     Newton,
     AlternatingProjections,
+    AcceleratedAlternatingProjections,
     DirectProjection,
     JuMPAlgorithm
 
