@@ -28,10 +28,6 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
     n = size(Y, 1)
     T = eltype(Y)
 
-    W = Diagonal(ones(T, n))
-    WHalf = sqrt(W)
-    WHalfInv = inv(WHalf)
-
     R = similar(Y)
     X = similar(Y)
     S = zeros(T, n, n)
@@ -41,7 +37,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
 
     while i < solver.maxiters && resid ≥ solver.reltol
         @. R = Y - S
-        X .= project_s(R, WHalf, WHalfInv)
+        X .= project_s(R)
         @. S = X - R
         Y .= project_u(X)
 
