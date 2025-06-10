@@ -13,6 +13,13 @@ function project_s(X, Whalf, Whalfinv)
 end
 
 """
+    project_s(X)
+
+Project ``X`` onto the set of symmetric positive semi-definite matrices.
+"""
+project_s(X) = Symmetric(project_psd(X))
+
+"""
     project_u(X)
 
 Project ``X`` onto the set of symmetric matrices with unit diagonal.

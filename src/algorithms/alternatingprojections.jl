@@ -28,34 +28,21 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
     n = size(Y, 1)
     T = eltype(Y)
 
-    W = Diagonal(ones(T, n))
-    WHalf = sqrt(W)
-    WHalfInv = inv(WHalf)
-
     R = similar(Y)
     X = similar(Y)
     S = zeros(T, n, n)
-
-    Yold = similar(Y)
-    Xold = similar(Y)
 
     i = 0
     resid = Inf
 
     while i < solver.maxiters && resid ≥ solver.reltol
-        Yold .= Y
-        Xold .= X
-
-        R .= Y - S
-        X .= project_s(R, WHalf, WHalfInv)
-        S .= X - R
+        @. R = Y - S
+        X .= project_s(R)
+        @. S = X - R
         Y .= project_u(X)
 
-        rel_y = norm(Y - Yold, Inf) / norm(Y, Inf)
-        rel_x = norm(X - Xold, Inf) / norm(X, Inf)
-        rel_yx = norm(Y - X, Inf) / norm(Y, Inf)
-
-        resid = max(rel_x, rel_y, rel_yx)
+        # ref (4.1). Only need ‖Y-X‖/‖Y‖, and don't need ‖Xₖ-Xₖ₋₁‖\‖Xₖ‖ nor ‖Yₖ-Yₖ₋₁‖\‖Yₖ‖
+        resid = norm(Y .- X, Inf) / norm(Y, Inf)
 
         i += 1
     end
