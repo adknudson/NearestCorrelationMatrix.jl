@@ -43,6 +43,18 @@ function CommonSolve.solve(prob::NCMProblem, alg::NCMAlgorithm, args...; kwargs.
 end
 
 """
+    solve(prob, algtype)
+
+Solve the NCM problem with the given algorithm type. 
+The algorithm will be autotuned to the problem.
+"""
+function CommonSolve.solve(
+    prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
+)
+    return solve!(init(prob, algtype, args...; kwargs...))
+end
+
+"""
     solve(prob)
 
 Solve the NCM problem with the default algorithm.
