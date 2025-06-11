@@ -25,6 +25,12 @@ include("test_macros.jl")
         @test solver.alg isa algtype
     end
 
+    # solve with an algtype must return the correct algtype (#31)
+    for algtype in (AlternatingProjections, Newton, DirectProjection)
+        sol = solve(prob, algtype)
+        @test sol.alg isa algtype
+    end
+
     # variations of solve
     @test_isdefined solve
     @test_isimplemented solve(prob)
