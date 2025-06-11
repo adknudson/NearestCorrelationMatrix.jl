@@ -34,7 +34,7 @@ function build_ncm_solution(alg, X, resid, solver; iters=0, stats=nothing)
 end
 
 """
-    solve(prob, alg)
+    solve(prob, alg, args...; kwargs...)
 
 Solve the NCM problem with the given algorithm.
 """
@@ -43,7 +43,7 @@ function CommonSolve.solve(prob::NCMProblem, alg::NCMAlgorithm, args...; kwargs.
 end
 
 """
-    solve(prob, algtype)
+    solve(prob, algtype, args...; kwargs...)
 
 Solve the NCM problem with the given algorithm type. 
 The algorithm will be autotuned to the problem.
@@ -55,7 +55,7 @@ function CommonSolve.solve(
 end
 
 """
-    solve(prob)
+    solve(prob, args...; kwargs...)
 
 Solve the NCM problem with the default algorithm.
 """
@@ -64,7 +64,7 @@ function CommonSolve.solve(prob::NCMProblem, args...; kwargs...)
 end
 
 """
-    solve(prob, nothing)
+    solve(prob, nothing, args...; kwargs...)
 
 Solve the NCM problem with the default algorithm.
 """
@@ -73,7 +73,7 @@ function CommonSolve.solve(prob::NCMProblem, ::Nothing, args...; kwargs...)
 end
 
 """
-    solve!(solver)
+    solve!(solver, args...; kwargs...)
 
 Solve the initialized NCM problem.
 """
