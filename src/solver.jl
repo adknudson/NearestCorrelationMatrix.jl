@@ -30,6 +30,13 @@ mutable struct NCMSolver{TA,P,Talg,Tc,Ttol}
 end
 
 """
+    default_algtype(prob)
+
+Get the default algorithm type for a given input matrix.
+"""
+default_algtype(::NCMProblem) = Newton
+
+"""
     init(prob, alg, args...; kwargs...)
 
 Initialize the solver with the given algorithm.
@@ -144,39 +151,30 @@ function CommonSolve.init(
 end
 
 """
-    default_algtype(prob)
+    init(prob, algtype, args...; kwargs...)
 
-Get the default algorithm type for a given input matrix.
-"""
-default_algtype(::NCMProblem) = Newton
-
-"""
-    init(prob, algtype)
-
-Initialize the algorithm and the solver.
+Initialize the solver, and autotune the algorithm to the problem.
 """
 function CommonSolve.init(
     prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
 )
-    alg = autotune(algtype, prob)
-    return init(prob, alg, args...; kwargs...)
+    return init(prob, autotune(algtype, prob), args...; kwargs...)
 end
 
 """
-    init(prob)
+    init(prob, args...; kwargs...)
 
-Initialize the solver with the default algorithm.
+Initialize the solver with the default algorithm autotuned to the problem.
 """
 function CommonSolve.init(prob::NCMProblem, args...; kwargs...)
     return init(prob, nothing, args...; kwargs...)
 end
 
 """
-    init(prob, nothing)
+    init(prob, nothing, args...; kwargs...)
 
-Initialize the solver with the default algorithm.
+Initialize the solver with the default algorithm autotuned to the problem.
 """
 function CommonSolve.init(prob::NCMProblem, ::Nothing, args...; kwargs...)
-    algtype = default_algtype(prob)
-    return init(prob, algtype, args...; kwargs...)
+    return init(prob, default_algtype(prob), args...; kwargs...)
 end
