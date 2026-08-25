@@ -1,5 +1,7 @@
 #!/usr/bin/env julia
 
+ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
+
 using SafeTestsets
 
 @time begin

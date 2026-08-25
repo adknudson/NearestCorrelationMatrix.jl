@@ -1,11 +1,13 @@
 name = "NearestCorrelationMatrix"
 uuid = "59ddf330-608c-4938-8bc9-a4ee97bbbea6"
-authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
 version = "1.1.2"
+authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
 
 [deps]
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+DataDeps = "124859b0-ceae-595e-8997-d05f6a7a8dfe"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
@@ -20,9 +22,11 @@ NCMJuMPExt = "JuMP"
 Aqua = "0.8.5"
 COSMO = "0.8.4"
 CommonSolve = "0.2"
+DataDeps = "1.0.0"
 JuMP = "1.20"
 JuliaFormatter = "1"
 LinearAlgebra = "<0.0.1, 1"
+MAT = "0.12.1"
 PrecompileTools = "1.2"
 SafeTestsets = "0.1"
 Test = "<0.0.1, 1"
