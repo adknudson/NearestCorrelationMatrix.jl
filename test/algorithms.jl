@@ -8,7 +8,7 @@ using LinearAlgebra: issymmetric, isposdef, Symmetric
 include("test_macros.jl")
 
 function test_simple(algtype)
-    @testset "$algtype" begin
+    return @testset "$algtype" begin
         r0 = get_negdef_matrix(Float64)
         prob = NCMProblem(r0)
         alg = autotune(algtype, prob)
@@ -34,7 +34,7 @@ function test_simple(algtype)
             @test_nothrow solve(prob, alg)
         else
             @test_throws Exception solve(prob, alg)
-            @test_nothrow solve(prob, alg; convert_f16=true)
+            @test_nothrow solve(prob, alg; convert_f16 = true)
         end
     end
 end
