@@ -5,7 +5,8 @@ using NearestCorrelationMatrix.Internals
 using LinearAlgebra: isposdef, Symmetric
 using JuMP, COSMO
 
-include("test_macros.jl");
+include("test_macros.jl")
+include("test_common.jl")
 
 function test_robust_reps(algtype::Type, nreps, size, T, test_pd; kwargs...)
     return @testset "$(size)×$(size)" begin

@@ -2,6 +2,8 @@ using Test
 using LinearAlgebra
 using NearestCorrelationMatrix.Internals
 
+include("test_common.jl")
+
 supported_types = (Float64, Float32, Float16)
 
 @testset "Internal Utilities" begin

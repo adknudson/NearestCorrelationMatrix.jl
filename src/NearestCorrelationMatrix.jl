@@ -21,8 +21,6 @@ include("algorithms/directprojection.jl")
 include("algorithms/alternatingprojections.jl")
 include("algorithms/extension_algs.jl")
 
-include("datasets/Datasets.jl")
-
 using PrecompileTools: PrecompileTools
 PrecompileTools.@compile_workload begin
     A = rand(Float64, 4, 4)

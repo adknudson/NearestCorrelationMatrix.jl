@@ -1,9 +1,11 @@
 ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
+push!(LOAD_PATH, @__DIR__)
+
 using Test
+import Datasets as DS # local module
 import NearestCorrelationMatrix as NCM
-import NearestCorrelationMatrix.Datasets as DS
-using NearestCorrelationMatrix.Internals: iscorrelation
+using NearestCorrelationMatrix.Internals
 
 @testset "BCCD16" begin
     A = DS.bccd16()

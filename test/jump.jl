@@ -4,6 +4,7 @@ using NearestCorrelationMatrix.Internals
 using JuMP, COSMO
 
 include("test_macros.jl")
+include("test_common.jl")
 
 @testset "JuMP Extension" begin
     r0 = get_negdef_matrix(Float64)

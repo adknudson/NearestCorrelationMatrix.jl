@@ -4,7 +4,6 @@ using DataDeps
 using LinearAlgebra
 import MAT
 
-
 function __init__()
     register(
         DataDep(
@@ -53,7 +52,6 @@ function __init__()
     return nothing
 end
 
-
 """
     vec_to_mat(x::AbstractVector; diag_val::Real = 1)
 
@@ -81,7 +79,6 @@ function vec_to_mat(x::AbstractVector{T}; diag_val::Real = 1) where {T}
 
     return A
 end
-
 
 """
 BCCD16 is a 3250×3250 invalid correlation matrix constructed from data for banks in 27 EU member states.

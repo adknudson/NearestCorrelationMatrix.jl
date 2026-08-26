@@ -6,6 +6,7 @@ using NearestCorrelationMatrix.Internals
 using LinearAlgebra: issymmetric, isposdef, Symmetric
 
 include("test_macros.jl")
+include("test_common.jl")
 
 function test_simple(algtype)
     return @testset "$algtype" begin

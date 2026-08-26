@@ -1,9 +1,9 @@
 using Test
 using NearestCorrelationMatrix
-using NearestCorrelationMatrix.Internals: get_negdef_matrix
 using LinearAlgebra
 
 include("test_macros.jl")
+include("test_common.jl")
 
 @testset "Simple API" begin
     @test_isdefined nearest_cor
