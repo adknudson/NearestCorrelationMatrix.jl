@@ -22,17 +22,33 @@ function __init__()
         "COR3120 is an invalid correlation matrix of dimension 3120 constructed from stock data.  The matrix was provided by investment company Orbis.",
         "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/cor3120.mat"
     ))
+    register(DataDep(
+        "usgs13",
+        """
+        USGS13 is a matrix is for carbon dioxide storage assessment units for the Rocky
+        Mountains region of the USA and was generated during the
+        national assessment of carbon dioxide storage resources.
+
+        Source:
+        U.S. Geological Survey Geologic Carbon Dioxide Storage
+        Resources Assessment Team. National Assessment of Geologic Carbon
+        Dioxide Storage Resources---Results (Ver. 1.1, September 2013),
+        September 2013. Provided by Madalyn Blondes of the U.S. Geological
+        Survey, email correspondence; permission to use given.
+        """,
+        "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/Rocky_Mountain_Region_CORR.mat"
+    ))
 end
 
 
 
 """
-    _vec_to_mat(x::AbstractVector; diag_val::Real = 1)
+    vec_to_mat(x::AbstractVector; diag_val::Real = 1)
 
-Reconstructs a full `Symmetric` matrix from a compressed strict upper-triangular
+Reconstructs a full symmetric matrix from a compressed strict upper-triangular
 vector `x`. Fills the main diagonal with `diag_val` (default: 1).
 """
-function _vec_to_mat(x::AbstractVector{T}; diag_val::Real=1) where {T}
+function vec_to_mat(x::AbstractVector{T}; diag_val::Real=1) where {T}
     m = length(x)
     n = round(Int, (1 + sqrt(1 + 8m)) / 2)
     if (n * (n - 1)) ÷ 2 != m
@@ -52,30 +68,6 @@ function _vec_to_mat(x::AbstractVector{T}; diag_val::Real=1) where {T}
     end
 
     return A
-end
-
-"""
-    _sym_to_vec(A::AbstractMatrix)
-
-Extracts the strict upper-triangular elements (excluding diagonal)
-from a symmetric matrix `A` into a compressed vector.
-"""
-function _sym_to_vec(A::AbstractMatrix{T}) where {T}
-    p, q = size(A)
-    p == q || error("Matrix must be square, got ($p, $q).")
-
-    # Allocate vector using the element type of A
-    m = (p * (p - 1)) ÷ 2
-    x = Vector{T}(undef, m)
-
-    # Fill vector sequentially across column-major upper triangle (i < j)
-    idx = 1
-    for j in 2:p, i in 1:(j - 1)
-        x[idx] = A[i, j]
-        idx += 1
-    end
-
-    return x
 end
 
 
@@ -112,7 +104,7 @@ function beyu11()
         0.3582, 0.4911, 0.3582, 0.4371, 0.3745, 0.7881, 0.1161, 0.5128, 0.2966, 0.4610,
         0.6161, 0.4962, 0.5164, 0.6079, 0.4512, 0.4512
     ]
-    return _vec_to_mat(x)
+    return vec_to_mat(x)
 end
 
 """
@@ -124,13 +116,7 @@ Journal of Risk, 4(1):91-106, 2001.
 """
 function bhwi01()
     x = [-0.5, -0.3, 0.9, -0.25, 0.3, 0.25, -0.7, 0.7, 0.2, 0.75]
-    return _vec_to_mat(x)
-end
-
-function cor1399()
-    local_path = joinpath(datadep"cor1399", "cor1399.mat")
-    mat_dict = MAT.matread(local_path)
-    return mat_dict["x"] |> vec |> _vec_to_mat
+    return vec_to_mat(x)
 end
 
 """
@@ -142,7 +128,7 @@ Source:
 function cor1399()
     local_path = joinpath(datadep"cor1399", "cor1399.mat")
     mat_dict = MAT.matread(local_path)
-    return mat_dict["x"] |> vec |> _vec_to_mat
+    return mat_dict["x"] |> vec |> vec_to_mat
 end
 
 """
@@ -154,7 +140,7 @@ Source:
 function cor3120()
     local_path = joinpath(datadep"cor3120", "cor3120.mat")
     mat_dict = MAT.matread(local_path)
-    return mat_dict["x"] |> vec |> _vec_to_mat
+    return mat_dict["x"] |> vec |> vec_to_mat
 end
 
 """
@@ -217,7 +203,12 @@ function mmb13()
 end
 
 """
-    TODO
+TEC03 is a 4×4 invalid correlation matrix from stress testing.
+
+Source:
+> ̂Ω on p.~86 in
+Saygun Turkay, Eduardo Epperlein, and Nicos Christofides. Correlation
+stress testing for value-at-risk. Journal of Risk, 5(4):75-89, 2003
 """
 function tec03()
     return Float64[
@@ -226,6 +217,89 @@ function tec03()
         -0.15 0.90  1     0.90
         -0.10 0.90  0.90  1
     ]
+end
+
+"""
+TYDA99R1 is an 8×8 invalid correlation matrix from resource allocation modeling.
+
+Source:
+> Rajesh Tyagi and Chandrasekhar Das. Grouping customers for better
+allocation of resources to serve correlated demands. Computers &
+Operations Research, 26(10-11):1041-1058, 1999.
+"""
+function tyda99r1()
+    x = [0.1 -1 0.4 0.8 -0.1 -0.2 0.7 0.4 -0.3 0.8 -0.1 0.4 0.8 -0.3 0 0.3 0.2 0.9 -0.3 -0.5 -0.4 0.3 0.6 0.8 0.1 1 -0.2 0.6]
+    return vec_to_mat(x)
+end
+
+"""
+TYDA99R2 is an 8×8 invalid correlation matrix from resource allocation modeling.
+
+Source:
+> Rajesh Tyagi and Chandrasekhar Das. Grouping customers for better
+allocation of resources to serve correlated demands. Computers &
+Operations Research, 26(10-11):1041-1058, 1999.
+"""
+function tyda99r2()
+    x = [0.1 1 0.4 0.8 0.1 0.2 0.7 0.4 0.3 0.8 0.1 0.4 0.8 0.3 0 0.3 0.2 0.9 0.3 0.5 0.4 0.3 0.6 0.8 0.1 1 0.2 0.6]
+    return vec_to_mat(x)
+end
+
+"""
+TYDA99R3 is an 8×8 invalid correlation matrix from resource allocation modeling.
+
+Source:
+> Rajesh Tyagi and Chandrasekhar Das. Grouping customers for better
+allocation of resources to serve correlated demands. Computers &
+Operations Research, 26(10-11):1041-1058, 1999.
+"""
+function tyda99r3()
+    x = [-0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 0.5 0.5 -0.5 0.5 0.5 -0.5 0.5 0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 -0.5 0.5 0.5 -0.5]
+    return vec_to_mat(x)
+end
+
+"""
+USGS13 is a 94×94 invalid correlation matrix from carbon
+dioxide storage assessment units for the Rocky Mountains
+region of the USA and was generated during the national
+assessment of carbon dioxide storage resources.
+
+The output `mask` defines positions that must remain fixed in transforming `A` to a valid
+correlation matrix.
+
+Source:
+> U.S. Geological Survey Geologic Carbon Dioxide Storage
+Resources Assessment Team. National Assessment of Geologic Carbon
+Dioxide Storage Resources---Results (Ver. 1.1, September 2013),
+September 2013. Provided by Madalyn Blondes of the U.S. Geological
+Survey, email correspondence; permission to use given.
+"""
+function usgs13()
+    local_path = joinpath(datadep"usgs13", "Rocky_Mountain_Region_CORR.mat")
+    mat_dict = MAT.matread(local_path)
+    A = mat_dict["A"]
+
+    block_sizes = [12, 5, 1, 14, 12, 1, 10, 4, 5, 9, 13, 8]
+    total_dim = sum(block_sizes)
+
+    # 1. Pre-allocate a dense BitMatrix full of falses
+    mask = falses(total_dim, total_dim)
+
+    # 2. Fill in block diagonal submatrices where A is non-zero
+    start_idx = 1
+    for sz in block_sizes
+        stop_idx = start_idx + sz - 1
+
+        # Submatrix block from A
+        B = A[start_idx:stop_idx, start_idx:stop_idx]
+
+        # Set non-zero elements to true in the dense matrix
+        mask[start_idx:stop_idx, start_idx:stop_idx] .= B .!= 0
+
+        start_idx = stop_idx + 1
+    end
+
+    return A, mask
 end
 
 end
