@@ -1,7 +1,3 @@
-#!/usr/bin/env julia
-
-ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
-
 using SafeTestsets
 
 @time begin
@@ -12,4 +8,5 @@ using SafeTestsets
     @time @safetestset "Simple API" include("simple_api.jl")
     @time @safetestset "Algorithms" include("algorithms.jl")
     @time @safetestset "JuMP Extension" include("jump.jl")
+    @time @safetestset "Real World Data" include("real_world.jl")
 end
