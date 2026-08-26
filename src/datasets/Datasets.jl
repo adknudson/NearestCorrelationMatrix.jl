@@ -240,7 +240,7 @@ Operations Research, 26(10-11):1041-1058, 1999.
 """
 function tyda99r1()
     x = [0.1 -1 0.4 0.8 -0.1 -0.2 0.7 0.4 -0.3 0.8 -0.1 0.4 0.8 -0.3 0 0.3 0.2 0.9 -0.3 -0.5 -0.4 0.3 0.6 0.8 0.1 1 -0.2 0.6]
-    return vec_to_mat(x)
+    return vec_to_mat(vec(x))
 end
 
 """
@@ -253,7 +253,7 @@ Operations Research, 26(10-11):1041-1058, 1999.
 """
 function tyda99r2()
     x = [0.1 1 0.4 0.8 0.1 0.2 0.7 0.4 0.3 0.8 0.1 0.4 0.8 0.3 0 0.3 0.2 0.9 0.3 0.5 0.4 0.3 0.6 0.8 0.1 1 0.2 0.6]
-    return vec_to_mat(x)
+    return vec_to_mat(vec(x))
 end
 
 """
@@ -266,7 +266,7 @@ Operations Research, 26(10-11):1041-1058, 1999.
 """
 function tyda99r3()
     x = [-0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 0.5 0.5 -0.5 0.5 0.5 -0.5 0.5 0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 -0.5 0.5 0.5 -0.5]
-    return vec_to_mat(x)
+    return vec_to_mat(vec(x))
 end
 
 """
