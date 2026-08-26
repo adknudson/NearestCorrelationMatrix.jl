@@ -17,7 +17,7 @@ JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 NCMJuMPExt = "JuMP"
 
 [compat]
-Aqua = "0.8.5"
+Aqua = "0.8.16"
 COSMO = "0.8.4"
 CommonSolve = "0.2"
 DataDeps = "1.0.0"
