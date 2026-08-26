@@ -5,45 +5,53 @@ using LinearAlgebra
 import MAT
 
 
-
 function __init__()
-    register(DataDep(
-        "bccd16",
-        "BCCD16 is an invalid correlation matrix of dimension 3250 constructed from data for 3250 banks in 27 EU member states (EU 27).",
-        "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/bccd16.mat",
-        "da84ad3a249b3857d320151901f9093b50ff010f84dd897a97ef1de94f483c78"
-    ))
-    register(DataDep(
-        "cor1399",
-        "COR1399 is an invalid correlation matrix of dimension 1399 constructed from stock data.  The matrix was provided by investment company Orbis",
-        "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/cor1399.mat",
-        "b20c1ce88d6432189b7559d24d3ae849ca48059e71e87fbc96004c7a7b2ca3eb"
-    ))
-    register(DataDep(
-        "cor3120",
-        "COR3120 is an invalid correlation matrix of dimension 3120 constructed from stock data.  The matrix was provided by investment company Orbis.",
-        "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/cor3120.mat",
-        "5ab0ce21d68e216b594c041f0ccd01e43e9e3624ea9eb5d31623bd52b6eae032"
-    ))
-    register(DataDep(
-        "usgs13",
-        """
-        USGS13 is a matrix is for carbon dioxide storage assessment units for the Rocky
-        Mountains region of the USA and was generated during the
-        national assessment of carbon dioxide storage resources.
+    register(
+        DataDep(
+            "bccd16",
+            "BCCD16 is an invalid correlation matrix of dimension 3250 constructed from data for 3250 banks in 27 EU member states (EU 27).",
+            "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/bccd16.mat",
+            "da84ad3a249b3857d320151901f9093b50ff010f84dd897a97ef1de94f483c78"
+        )
+    )
+    register(
+        DataDep(
+            "cor1399",
+            "COR1399 is an invalid correlation matrix of dimension 1399 constructed from stock data.  The matrix was provided by investment company Orbis",
+            "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/cor1399.mat",
+            "b20c1ce88d6432189b7559d24d3ae849ca48059e71e87fbc96004c7a7b2ca3eb"
+        )
+    )
+    register(
+        DataDep(
+            "cor3120",
+            "COR3120 is an invalid correlation matrix of dimension 3120 constructed from stock data.  The matrix was provided by investment company Orbis.",
+            "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/cor3120.mat",
+            "5ab0ce21d68e216b594c041f0ccd01e43e9e3624ea9eb5d31623bd52b6eae032"
+        )
+    )
+    register(
+        DataDep(
+            "usgs13",
+            """
+            USGS13 is a matrix is for carbon dioxide storage assessment units for the Rocky
+            Mountains region of the USA and was generated during the
+            national assessment of carbon dioxide storage resources.
 
-        Source:
-        U.S. Geological Survey Geologic Carbon Dioxide Storage
-        Resources Assessment Team. National Assessment of Geologic Carbon
-        Dioxide Storage Resources---Results (Ver. 1.1, September 2013),
-        September 2013. Provided by Madalyn Blondes of the U.S. Geological
-        Survey, email correspondence; permission to use given.
-        """,
-        "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/Rocky_Mountain_Region_CORR.mat",
-        "5c89504736d33723be24189f6e427552b5c913455e73bb26c7a2108865d1509d"
-    ))
+            Source:
+            U.S. Geological Survey Geologic Carbon Dioxide Storage
+            Resources Assessment Team. National Assessment of Geologic Carbon
+            Dioxide Storage Resources---Results (Ver. 1.1, September 2013),
+            September 2013. Provided by Madalyn Blondes of the U.S. Geological
+            Survey, email correspondence; permission to use given.
+            """,
+            "https://github.com/higham/matrices-correlation-invalid/raw/refs/heads/master/Rocky_Mountain_Region_CORR.mat",
+            "5c89504736d33723be24189f6e427552b5c913455e73bb26c7a2108865d1509d"
+        )
+    )
+
+    return nothing
 end
-
 
 
 """
@@ -52,7 +60,7 @@ end
 Reconstructs a full symmetric matrix from a compressed strict upper-triangular
 vector `x`. Fills the main diagonal with `diag_val` (default: 1).
 """
-function vec_to_mat(x::AbstractVector{T}; diag_val::Real=1) where {T}
+function vec_to_mat(x::AbstractVector{T}; diag_val::Real = 1) where {T}
     m = length(x)
     n = round(Int, (1 + sqrt(1 + 8m)) / 2)
     if (n * (n - 1)) ÷ 2 != m
@@ -73,7 +81,6 @@ function vec_to_mat(x::AbstractVector{T}; diag_val::Real=1) where {T}
 
     return A
 end
-
 
 
 """
@@ -102,11 +109,11 @@ function beyu11()
     x = Float64[
         0.2387, 0.6161, 0.3506, 0.6167, 0.3537, 0.8579, 0.6621, 0.2959, 0.6603, 0.7477,
         0.5173, 0.4637, 0.4093, 0.1803, 0.3537, 0.6758, 0.1931, 0.3826, 0.4705, 0.7364,
-        0.3582, 0.7071, 0.1202, 0.5164, 0.6167, 0.5670, 0.1803, 0.4705, 0.7983, 0.2316,
+        0.3582, 0.7071, 0.1202, 0.5164, 0.6167, 0.567, 0.1803, 0.4705, 0.7983, 0.2316,
         0.6079, 0.6218, 0.6613, 0.0605, 0.6424, 0.7149, 0.5769, 0.1708, 0.5574, 0.4705,
-        0.5140, 0.4705, 0.6090, 0.4705, 0.4371, 0.4705, 0.4047, 0.4512, 0.3582, 0.5140,
-        0.3582, 0.4911, 0.3582, 0.4371, 0.3745, 0.7881, 0.1161, 0.5128, 0.2966, 0.4610,
-        0.6161, 0.4962, 0.5164, 0.6079, 0.4512, 0.4512
+        0.514, 0.4705, 0.609, 0.4705, 0.4371, 0.4705, 0.4047, 0.4512, 0.3582, 0.514,
+        0.3582, 0.4911, 0.3582, 0.4371, 0.3745, 0.7881, 0.1161, 0.5128, 0.2966, 0.461,
+        0.6161, 0.4962, 0.5164, 0.6079, 0.4512, 0.4512,
     ]
     return vec_to_mat(x)
 end
@@ -156,18 +163,18 @@ Source:
 """
 function fing97()
     A = Float64[
-         1.00  0.18 -0.13 -0.26  0.19 -0.25 -0.12
-         0.18  1.00  0.22 -0.14  0.31  0.16  0.09
-        -0.13  0.22  1.00  0.06 -0.08  0.04  0.04
-        -0.26 -0.14  0.06  1.00  0.85  0.85  0.85
-         0.19  0.31 -0.08  0.85  1.00  0.85  0.85
-        -0.25  0.16  0.04  0.85  0.85  1.00  0.85
-        -0.12  0.09  0.04  0.85  0.85  0.85  1.00
-   ]
+        1.0  0.18 -0.13 -0.26  0.19 -0.25 -0.12
+        0.18  1.0  0.22 -0.14  0.31  0.16  0.09
+        -0.13  0.22  1.0  0.06 -0.08  0.04  0.04
+        -0.26 -0.14  0.06  1.0  0.85  0.85  0.85
+        0.19  0.31 -0.08  0.85  1.0  0.85  0.85
+        -0.25  0.16  0.04  0.85  0.85  1.0  0.85
+        -0.12  0.09  0.04  0.85  0.85  0.85  1.0
+    ]
 
-   mask = [trues(3, 3) falses(3, 4); falses(4, 3) I(4)]
+    mask = [trues(3, 3) falses(3, 4); falses(4, 3) I(4)]
 
-   return A, mask
+    return A, mask
 end
 
 """
@@ -192,12 +199,12 @@ St. Petersburg, Russia, 2013. Revised June 2014.
 """
 function mmb13()
     A = Float64[
-         0.010712 0.000654  0.002391  0.010059 -0.008321  0.001738
-         0.000654 0.000004  0.002917  0.000650  0.002263  0.002913
-         0.002391 0.002917  0.013225 -0.000525  0.010834  0.010309
-         0.010059 0.000650 -0.000525  0.009409 -0.010584 -0.001175
+        0.010712 0.000654  0.002391  0.010059 -0.008321  0.001738
+        0.000654 0.000004  0.002917  0.00065  0.002263  0.002913
+        0.002391 0.002917  0.013225 -0.000525  0.010834  0.010309
+        0.010059 0.00065 -0.000525  0.009409 -0.010584 -0.001175
         -0.008321 0.002263  0.010834 -0.010584  0.019155  0.008571
-         0.001738 0.002913  0.010309 -0.001175  0.008571  0.007396
+        0.001738 0.002913  0.010309 -0.001175  0.008571  0.007396
     ]
 
     d = sqrt.(diag(A))
@@ -216,10 +223,10 @@ stress testing for value-at-risk. Journal of Risk, 5(4):75-89, 2003
 """
 function tec03()
     return Float64[
-         1   -0.55 -0.15 -0.10
-        -0.55 1     0.90  0.90
-        -0.15 0.90  1     0.90
-        -0.10 0.90  0.90  1
+        1   -0.55 -0.15 -0.1
+        -0.55 1     0.9  0.9
+        -0.15 0.9  1     0.9
+        -0.1 0.9  0.9  1
     ]
 end
 

@@ -12,7 +12,7 @@ Representation of the solution to an NCM problem defined by a `NCMProblem`
 - `solver`: The `NCMSolver` object containing the solver's internal cached variables.
 - `stats`: Statistics of the solver.
 """
-struct NCMSolution{T,R,A,C,S}
+struct NCMSolution{T, R, A, C, S}
     X::T
     resid::R
     alg::A
@@ -26,9 +26,9 @@ end
 
 Build the NCMSolution object from the given arguments.
 """
-function build_ncm_solution(alg, X, resid, solver; iters=0, stats=nothing)
+function build_ncm_solution(alg, X, resid, solver; iters = 0, stats = nothing)
     Y = Symmetric(X)
-    return NCMSolution{typeof(Y),typeof(resid),typeof(alg),typeof(solver),typeof(stats)}(
+    return NCMSolution{typeof(Y), typeof(resid), typeof(alg), typeof(solver), typeof(stats)}(
         Y, resid, alg, iters, solver, stats
     )
 end
@@ -49,8 +49,8 @@ Solve the NCM problem with the given algorithm type.
 The algorithm will be autotuned to the problem.
 """
 function CommonSolve.solve(
-    prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
-)
+        prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
+    )
     return solve!(init(prob, algtype, args...; kwargs...))
 end
 

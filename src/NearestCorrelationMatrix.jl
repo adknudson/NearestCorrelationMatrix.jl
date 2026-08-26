@@ -26,9 +26,9 @@ include("datasets/Datasets.jl")
 using PrecompileTools: PrecompileTools
 PrecompileTools.@compile_workload begin
     A = rand(Float64, 4, 4)
-    nearest_cor(A, Newton(); fix_sym=true)
-    nearest_cor(A, AlternatingProjections(); fix_sym=true)
-    nearest_cor(A, DirectProjection(); fix_sym=true)
+    nearest_cor(A, Newton(); fix_sym = true)
+    nearest_cor(A, AlternatingProjections(); fix_sym = true)
+    nearest_cor(A, DirectProjection(); fix_sym = true)
 end
 
 export

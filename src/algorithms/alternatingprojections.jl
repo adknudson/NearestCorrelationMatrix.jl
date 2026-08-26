@@ -3,13 +3,13 @@
 
 The alternating projections algorithm developed by Nick Higham.
 """
-struct AlternatingProjections{A,K} <: NCMAlgorithm
+struct AlternatingProjections{A, K} <: NCMAlgorithm
     tau::Real
     args::A
     kwargs::K
 end
 
-function AlternatingProjections(args...; tau::Real=0, kwargs...)
+function AlternatingProjections(args...; tau::Real = 0, kwargs...)
     return AlternatingProjections(tau, args, kwargs)
 end
 
@@ -20,7 +20,7 @@ supports_symmetric(::AlternatingProjections) = false
 supports_parameterless_construction(::Type{AlternatingProjections}) = true
 
 function autotune(::Type{AlternatingProjections}, prob::NCMProblem)
-    return AlternatingProjections(; tau=eps(eltype(prob.A)))
+    return AlternatingProjections(; tau = eps(eltype(prob.A)))
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)
@@ -53,5 +53,5 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
     cov2cor!(Y)
     i += 1
 
-    return build_ncm_solution(alg, Y, resid, solver; iters=i)
+    return build_ncm_solution(alg, Y, resid, solver; iters = i)
 end

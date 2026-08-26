@@ -7,13 +7,13 @@ a "close" correlation matrix is needed without concern for it being the most opt
 # Parameters
 - `tau`: a tuning parameter controlling the smallest eigenvalue of the resulting matrix
 """
-struct DirectProjection{A,K} <: NCMAlgorithm
+struct DirectProjection{A, K} <: NCMAlgorithm
     tau::Real
     args::A
     kwargs::K
 end
 
-function DirectProjection(args...; tau::Real=0, kwargs...)
+function DirectProjection(args...; tau::Real = 0, kwargs...)
     return DirectProjection(tau, args, kwargs)
 end
 
@@ -25,39 +25,39 @@ supports_parameterless_construction(::Type{DirectProjection}) = true
 autotune(::Type{DirectProjection}, prob::NCMProblem) = _autotune(DirectProjection, prob.A)
 
 function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float64})
-    return DirectProjection(; tau=1e-12)
+    return DirectProjection(; tau = 1.0e-12)
 end
 
 function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float32})
     n = size(A, 1)
 
     tau = if n ≤ 25
-        1e-6
+        1.0e-6
     elseif n ≤ 100
-        5e-6
+        5.0e-6
     elseif n ≤ 500
-        1e-5
+        1.0e-5
     else
-        5e-5
+        5.0e-5
     end
 
-    return DirectProjection(; tau=tau)
+    return DirectProjection(; tau = tau)
 end
 
 function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16})
     n = size(A, 1)
 
     tau = if n ≤ 10
-        5e-3
+        5.0e-3
     elseif n ≤ 25
-        1e-2
+        1.0e-2
     elseif n ≤ 50
         2.5e-2
     else
-        5e-2
+        5.0e-2
     end
 
-    return DirectProjection(; tau=tau)
+    return DirectProjection(; tau = tau)
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
@@ -68,5 +68,5 @@ function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
     project_psd!(X, tau)
     cov2cor!(X)
 
-    return build_ncm_solution(alg, X, nothing, solver; iters=1)
+    return build_ncm_solution(alg, X, nothing, solver; iters = 1)
 end
