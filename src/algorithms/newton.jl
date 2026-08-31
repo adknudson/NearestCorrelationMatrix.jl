@@ -10,7 +10,7 @@
 - `iter_cg`: the max number of iterations in the conjugate gradient method
 - `iter_ls`: the max number of refinements during the Newton step
 """
-struct Newton{A,K} <: NCMAlgorithm
+struct Newton{A, K} <: NCMAlgorithm
     tau::Real
     tol_cg::Real
     tol_ls::Real
@@ -21,19 +21,19 @@ struct Newton{A,K} <: NCMAlgorithm
 end
 
 function Newton(
-    args...;
-    tau::Real=eps(),
-    tol_cg::Real=1e-2,
-    tol_ls::Real=1e-4,
-    iter_cg::Int=200,
-    iter_ls::Int=20,
-    kwargs...
-)
+        args...;
+        tau::Real = eps(),
+        tol_cg::Real = 1.0e-2,
+        tol_ls::Real = 1.0e-4,
+        iter_cg::Int = 200,
+        iter_ls::Int = 20,
+        kwargs...
+    )
     return Newton(tau, tol_cg, tol_ls, iter_cg, iter_ls, args, kwargs)
 end
 
 autotune(::Type{Newton}, prob::NCMProblem) = _autotune(Newton, prob.A)
-_autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(; tau=1e-12)
+_autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(; tau = 1.0e-12)
 
 function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
     n = size(A, 1)
@@ -41,32 +41,32 @@ function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
     tau = if n ≤ 50
         7.5e-6
     elseif n ≤ 100
-        1e-5
+        1.0e-5
     elseif n ≤ 500
-        5e-5
+        5.0e-5
     elseif n ≤ 1000
-        1e-4
+        1.0e-4
     else
-        5e-5
+        5.0e-5
     end
 
-    return Newton(; tau=tau)
+    return Newton(; tau = tau)
 end
 
 function _autotune(::Type{Newton}, A::AbstractMatrix{Float16})
     n = size(A, 1)
 
     tau = if n ≤ 25
-        5e-3
+        5.0e-3
     elseif n ≤ 50
-        1e-2
+        1.0e-2
     elseif n ≤ 500
-        5e-2
+        5.0e-2
     else
-        1e-1
+        1.0e-1
     end
 
-    return Newton(; tau=tau)
+    return Newton(; tau = tau)
 end
 
 modifies_in_place(::Newton) = false
@@ -133,7 +133,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
         f = dual_gradient!(∇fy, y, λ, P, b0)
 
         m = 0
-        while (m < alg.iter_ls) && (f > f0 + alg.tol_ls * slope / 2^m + 1e-6)
+        while (m < alg.iter_ls) && (f > f0 + alg.tol_ls * slope / 2^m + 1.0e-6)
             m += 1
             y .= x0 + d / 2^m
             X .= G + Diagonal(y)
@@ -162,5 +162,5 @@ function CommonSolve.solve!(solver::NCMSolver, alg::Newton; kwargs...)
 
     cov2cor!(X)
 
-    return build_ncm_solution(alg, X, gap, solver; iters=k)
+    return build_ncm_solution(alg, X, gap, solver; iters = k)
 end

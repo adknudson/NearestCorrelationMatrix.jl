@@ -5,10 +5,11 @@ using NearestCorrelationMatrix.Internals
 using LinearAlgebra: isposdef, Symmetric
 using JuMP, COSMO
 
-include("test_macros.jl");
+include("test_macros.jl")
+include("test_common.jl")
 
 function test_robust_reps(algtype::Type, nreps, size, T, test_pd; kwargs...)
-    @testset "$(size)×$(size)" begin
+    return @testset "$(size)×$(size)" begin
         for _ in 1:nreps
             r0 = rand_negdef(T, size)
             prob = NCMProblem(r0)
@@ -26,7 +27,7 @@ function test_robust_reps(algtype::Type, nreps, size, T, test_pd; kwargs...)
 end
 
 function test_robust_reps(alg::NCMAlgorithm, nreps, size, T, test_pd; kwargs...)
-    @testset "$(size)×$(size)" begin
+    return @testset "$(size)×$(size)" begin
         for _ in 1:nreps
             r0 = rand_negdef(T, size)
             prob = NCMProblem(r0)
@@ -42,8 +43,8 @@ function test_robust_reps(alg::NCMAlgorithm, nreps, size, T, test_pd; kwargs...)
     end
 end
 
-function test_robust(algtype::Type, T; cutoff=Inf, test_pd=false, kwargs...)
-    @testset "$algtype - $T" begin
+function test_robust(algtype::Type, T; cutoff = Inf, test_pd = false, kwargs...)
+    return @testset "$algtype - $T" begin
         cutoff < 10 && return nothing
         test_robust_reps(algtype, 100, 10, T, test_pd; kwargs...)
         cutoff < 25 && return nothing
@@ -61,8 +62,8 @@ function test_robust(algtype::Type, T; cutoff=Inf, test_pd=false, kwargs...)
     end
 end
 
-function test_robust(alg::NCMAlgorithm, T; cutoff=Inf, test_pd=false, kwargs...)
-    @testset "$(alg_name(alg)) - $T" begin
+function test_robust(alg::NCMAlgorithm, T; cutoff = Inf, test_pd = false, kwargs...)
+    return @testset "$(alg_name(alg)) - $T" begin
         cutoff < 10 && return nothing
         test_robust_reps(alg, 100, 10, T, test_pd; kwargs...)
         cutoff < 25 && return nothing
@@ -83,44 +84,48 @@ end
 # These must succeed at all costs
 @testset verbose = true "Robustness - PosSemiDef" begin
     algtype = Newton
-    test_robust(algtype, Float64; cutoff=1000)
-    test_robust(algtype, Float32; cutoff=1000)
-    test_robust(algtype, Float16; cutoff=1000, force_f16=true)
+    test_robust(algtype, Float64; cutoff = 1000)
+    test_robust(algtype, Float32; cutoff = 1000)
+    test_robust(algtype, Float16; cutoff = 1000, force_f16 = true)
 
     algtype = DirectProjection
-    test_robust(algtype, Float64; cutoff=1000)
-    test_robust(algtype, Float32; cutoff=1000)
-    test_robust(algtype, Float16; cutoff=1000, force_f16=true)
+    test_robust(algtype, Float64; cutoff = 1000)
+    test_robust(algtype, Float32; cutoff = 1000)
+    test_robust(algtype, Float16; cutoff = 1000, force_f16 = true)
 
     algtype = AlternatingProjections
-    test_robust(algtype, Float64; cutoff=250)
-    test_robust(algtype, Float32; cutoff=250)
-    test_robust(algtype, Float16; cutoff=250, force_f16=true)
+    test_robust(algtype, Float64; cutoff = 250)
+    test_robust(algtype, Float32; cutoff = 250)
+    test_robust(algtype, Float16; cutoff = 250, force_f16 = true)
 
-    alg = JuMPAlgorithm(optimizer_with_attributes(
-        COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
-    ))
-    test_robust(alg, Float64; cutoff=1000)
+    alg = JuMPAlgorithm(
+        optimizer_with_attributes(
+            COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
+        )
+    )
+    test_robust(alg, Float64; cutoff = 1000)
 end
 
 @testset verbose = true "Robustness - PosDef" begin
     algtype = Newton
-    test_robust(algtype, Float64; cutoff=1000, test_pd=true)
-    test_robust(algtype, Float32; cutoff=1000, test_pd=true)
-    test_robust(algtype, Float16; cutoff=1000, test_pd=true, force_f16=true)
+    test_robust(algtype, Float64; cutoff = 1000, test_pd = true)
+    test_robust(algtype, Float32; cutoff = 1000, test_pd = true)
+    test_robust(algtype, Float16; cutoff = 1000, test_pd = true, force_f16 = true)
 
     algtype = DirectProjection
-    test_robust(algtype, Float64; cutoff=1000, test_pd=true)
-    test_robust(algtype, Float32; cutoff=1000, test_pd=true)
-    test_robust(algtype, Float16; cutoff=1000, test_pd=true, force_f16=true)
+    test_robust(algtype, Float64; cutoff = 1000, test_pd = true)
+    test_robust(algtype, Float32; cutoff = 1000, test_pd = true)
+    test_robust(algtype, Float16; cutoff = 1000, test_pd = true, force_f16 = true)
 
     algtype = AlternatingProjections
-    test_robust(algtype, Float64; cutoff=250, test_pd=true, ensure_pd=true)
-    test_robust(algtype, Float32; cutoff=250, test_pd=true, ensure_pd=true)
-    test_robust(algtype, Float16; cutoff=250, test_pd=true, ensure_pd=true, force_f16=true)
+    test_robust(algtype, Float64; cutoff = 250, test_pd = true, ensure_pd = true)
+    test_robust(algtype, Float32; cutoff = 250, test_pd = true, ensure_pd = true)
+    test_robust(algtype, Float16; cutoff = 250, test_pd = true, ensure_pd = true, force_f16 = true)
 
-    alg = JuMPAlgorithm(optimizer_with_attributes(
-        COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
-    ))
-    test_robust(algtype, Float64; cutoff=1000, test_pd=true, ensure_pd=true)
+    alg = JuMPAlgorithm(
+        optimizer_with_attributes(
+            COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
+        )
+    )
+    test_robust(algtype, Float64; cutoff = 1000, test_pd = true, ensure_pd = true)
 end

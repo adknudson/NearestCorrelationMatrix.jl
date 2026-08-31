@@ -1,7 +1,7 @@
 name = "NearestCorrelationMatrix"
 uuid = "59ddf330-608c-4938-8bc9-a4ee97bbbea6"
-authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
 version = "1.1.2"
+authors = ["Alex Knudson <alexk.706@gmail.com> and contributors"]
 
 [deps]
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
@@ -17,12 +17,13 @@ JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 NCMJuMPExt = "JuMP"
 
 [compat]
-Aqua = "0.8.5"
+Aqua = "0.8.16"
 COSMO = "0.8.4"
 CommonSolve = "0.2"
+DataDeps = "1.0.0"
 JuMP = "1.20"
-JuliaFormatter = "1"
 LinearAlgebra = "<0.0.1, 1"
+MAT = "0.12.1"
 PrecompileTools = "1.2"
 SafeTestsets = "0.1"
 Test = "<0.0.1, 1"
@@ -33,10 +34,11 @@ julia = "1.10"
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
+DataDeps = "124859b0-ceae-595e-8997-d05f6a7a8dfe"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
-JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "SafeTestsets", "Aqua", "JuMP", "COSMO", "JuliaFormatter"]
+test = ["Aqua", "COSMO", "DataDeps", "JuMP", "MAT", "SafeTestsets", "Test"]

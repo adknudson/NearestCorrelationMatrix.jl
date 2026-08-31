@@ -57,8 +57,8 @@ function primal_feasible_solution!(X, λ, P, b)
         Q = Pr * λr
         mul!(X, Q, Q')
     elseif r < n
-        Ps = @view P[:, r+1:end]
-        λs = sqrt(Diagonal(-λ[r+1:end]))
+        Ps = @view P[:, (r + 1):end]
+        λs = sqrt(Diagonal(-λ[(r + 1):end]))
         Q = Ps * λs
         mul!(X, Q, Q', 1, 1)
     end
@@ -92,7 +92,7 @@ function omega_matrix(λ)
     r == n && return ones(eltype(λ), n, n)
 
     λr = @view λ[begin:r]
-    λs = @view λ[r+1:end]
+    λs = @view λ[(r + 1):end]
 
     @tullio W[i, j] := λr[i] / (λr[i] - λs[j])
 
@@ -109,9 +109,9 @@ function full_omega_matrix!(Ω, W)
     r = size(W, 1)
 
     fill!(@view(Ω[begin:r, begin:r]), one(T))
-    fill!(@view(Ω[r+1:end, r+1:end]), zero(T))
-    @view(Ω[begin:r, r+1:end]) .= W
-    @view(Ω[r+1:end, begin:r]) .= W'
+    fill!(@view(Ω[(r + 1):end, (r + 1):end]), zero(T))
+    @view(Ω[begin:r, (r + 1):end]) .= W
+    @view(Ω[(r + 1):end, begin:r]) .= W'
 
     return Ω
 end
@@ -124,7 +124,7 @@ Compute a small perturbation value for the given input.
 function perturb end
 perturb(::Type{T}) where {T} = sqrt(eps(eltype(T))) / 4
 perturb(::T) where {T} = perturb(T)
-perturb(::AbstractArray{T,N}) where {T,N} = perturb(T)
+perturb(::AbstractArray{T, N}) where {T, N} = perturb(T)
 
 """
     jacobian_matrix!(Vd, d, W, P)
@@ -153,11 +153,11 @@ function jacobian_matrix!(Vd, d, W, P)
     end
 
     Pr = @view P[:, begin:r]
-    Ps = @view P[:, r+1:end]
+    Ps = @view P[:, (r + 1):end]
 
     Wrs = W .* (Pr' * Diagonal(d) * Ps)
     PW = Pr * Wrs
-    hh = 2 * sum(PW .* Ps; dims=2)
+    hh = 2 * sum(PW .* Ps; dims = 2)
 
     if r < s
         PrPr = Pr * Pr'

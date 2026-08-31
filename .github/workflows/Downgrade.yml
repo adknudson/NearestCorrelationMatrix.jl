@@ -12,19 +12,9 @@ on:
       - 'docs/**'
 jobs:
   test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        version: ['1']
-        group:
-          - Core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: ${{ matrix.version }}
-      - uses: julia-actions/julia-downgrade-compat@v1
-        with:
-          skip: Pkg,TOML
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+    name: "Downgrade"
+    uses: "SciML/.github/.github/workflows/downgrade.yml@v1"
+    with:
+      julia-version: "lts"
+      group: "Core"
+    secrets: "inherit"

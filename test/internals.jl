@@ -2,6 +2,8 @@ using Test
 using LinearAlgebra
 using NearestCorrelationMatrix.Internals
 
+include("test_common.jl")
+
 supported_types = (Float64, Float32, Float16)
 
 @testset "Internal Utilities" begin
@@ -77,7 +79,7 @@ supported_types = (Float64, Float32, Float16)
             setdiag!(sym_mat, one(T))
             @test all(==(one(T)), diag(sym_mat))
 
-            @test_throws Exception setdiag!(x, 3//4)
+            @test_throws Exception setdiag!(x, 3 // 4)
             @test_throws Exception setdiag!(rect_mat, one(T))
 
             # symmetric!

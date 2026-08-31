@@ -52,7 +52,7 @@ opt = optimizer_with_attributes(
 alg = JuMPAlgorithm(opt)
 ```
 """
-struct JuMPAlgorithm{O,A,K} <: NCMAlgorithm
+struct JuMPAlgorithm{O, A, K} <: NCMAlgorithm
     optimizer::O
     args::A
     kwargs::K
@@ -62,7 +62,7 @@ struct JuMPAlgorithm{O,A,K} <: NCMAlgorithm
         if ext === nothing
             error("JuMPAlgorithm requires that JuMP is loaded, i.e. `using JuMP`")
         else
-            return new{typeof(optimizer),typeof(args),typeof(kwargs)}(
+            return new{typeof(optimizer), typeof(args), typeof(kwargs)}(
                 optimizer, args, kwargs
             )
         end

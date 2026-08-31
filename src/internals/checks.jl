@@ -66,7 +66,7 @@ end
 
 Test whether a matrix is positive semi-definite within machine precision.
 """
-ispossemidef(X, ϵ=-sqrt(eps(eltype(X)))) = eigmin(X) ≥ ϵ
+ispossemidef(X, ϵ = -sqrt(eps(eltype(X)))) = eigmin(X) ≥ ϵ
 
 """
     isprecorrelation(X)

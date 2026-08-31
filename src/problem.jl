@@ -28,15 +28,15 @@ parameters. Any extra keyword arguments are passed on to the solvers.
 - `p`: The parameters for the problem. Defaults to `NullParameters`. Currently unused.
 - `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct NCMProblem{T,P,K}
+struct NCMProblem{T, P, K}
     A::T
     p::P
     kwargs::K
-    function NCMProblem(A, p=NullParameters(); kwargs...)
+    function NCMProblem(A, p = NullParameters(); kwargs...)
         require_matrix(A)
         require_square(A)
         require_real(A)
 
-        return new{typeof(A),typeof(p),typeof(kwargs)}(A, p, kwargs)
+        return new{typeof(A), typeof(p), typeof(kwargs)}(A, p, kwargs)
     end
 end
