@@ -1,16 +1,6 @@
-using Test
-using NearestCorrelationMatrix
-using NearestCorrelationMatrix: supports_float16
-using NearestCorrelationMatrix: construct_algorithm, supports_parameterless_construction
-using NearestCorrelationMatrix.Internals
-using LinearAlgebra: issymmetric, isposdef, Symmetric
-
-include("test_macros.jl")
-include("test_common.jl")
-
 function test_simple(algtype)
     return @testset "$algtype" begin
-        r0 = get_negdef_matrix(Float64)
+        r0 = default_negdef(Float64)
         prob = NCMProblem(r0)
         alg = autotune(algtype, prob)
         cache = init(prob, alg)
@@ -22,16 +12,16 @@ function test_simple(algtype)
         @test sol.X isa Symmetric
 
         # Handle Symmetric type matrices
-        r0 = get_negdef_matrix(Float64)
+        r0 = default_negdef(Float64)
         prob = NCMProblem(Symmetric(r0))
         alg = autotune(algtype, prob)
         @test_nothrow solve(prob, alg)
 
         # Handle Float16 input matrices
-        r0 = get_negdef_matrix(Float16)
+        r0 = default_negdef(Float16)
         prob = NCMProblem(r0)
         alg = autotune(algtype, prob)
-        if supports_float16(alg)
+        if NCM.supports_float16(alg)
             @test_nothrow solve(prob, alg)
         else
             @test_throws Exception solve(prob, alg)
@@ -44,16 +34,16 @@ end
     prob = NCMProblem(rand(4, 4))
 
     for algtype in (Newton, AlternatingProjections, AlternatingProjectionsAA, DirectProjection)
-        @test supports_parameterless_construction(algtype) == true
+        @test NCM.supports_parameterless_construction(algtype) == true
 
-        alg = construct_algorithm(algtype)
+        alg = NCM.construct_algorithm(algtype)
         @test alg isa algtype
 
         alg = autotune(algtype, prob)
         @test alg isa algtype
 
         # supports_parameterless_construction works on the type, not the instance
-        @test_throws MethodError supports_parameterless_construction(alg)
+        @test_throws MethodError NCM.supports_parameterless_construction(alg)
     end
 end
 

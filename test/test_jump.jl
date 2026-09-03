@@ -1,13 +1,7 @@
-using Test
-using NearestCorrelationMatrix
-using NearestCorrelationMatrix.Internals
 using JuMP, COSMO
 
-include("test_macros.jl")
-include("test_common.jl")
-
 @testset "JuMP Extension" begin
-    r0 = get_negdef_matrix(Float64)
+    r0 = default_negdef(Float64)
     prob = NCMProblem(r0)
 
     @test_isdefined JuMPAlgorithm
