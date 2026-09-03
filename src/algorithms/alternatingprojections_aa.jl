@@ -97,9 +97,9 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjectionsAA; kw
                     DG[:, m_eff] .= dg
                 else
                     # Shift left
-                    DF[:, 1:m-1] .= @view DF[:, 2:m]
+                    DF[:, 1:(m - 1)] .= @view DF[:, 2:m]
                     DF[:, m] .= df
-                    DG[:, 1:m-1] .= @view DG[:, 2:m]
+                    DG[:, 1:(m - 1)] .= @view DG[:, 2:m]
                     DG[:, m] .= dg
                 end
 
