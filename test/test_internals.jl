@@ -1,9 +1,3 @@
-using Test
-using LinearAlgebra
-using NearestCorrelationMatrix.Internals
-
-include("test_common.jl")
-
 supported_types = (Float64, Float32, Float16)
 
 @testset "Internal Utilities" begin
@@ -19,7 +13,7 @@ supported_types = (Float64, Float32, Float16)
             @test has_unit_diagonal(x) == true
             @test has_unit_diagonal(y) == false
 
-            r = get_negdef_matrix(T)
+            r = default_negdef(T)
             @test iscorrelation(r) == false
             @test iscorrelation(sqr_mat) == false
             @test iscorrelation(rect_mat) == false
@@ -33,7 +27,7 @@ supported_types = (Float64, Float32, Float16)
             @test typeof(clamp_pm1(x)) === T
 
             # cov2cor
-            x = get_negdef_matrix(T)
+            x = default_negdef(T)
             cor2cov!(x, T[5, 4, 3, 2])
             sym_mat = Symmetric(copy(x))
 
@@ -126,7 +120,7 @@ supported_types = (Float64, Float32, Float16)
             @test isprecorrelation(diag_mat) == true
 
             # cov2cor!
-            x = get_negdef_matrix(T)
+            x = default_negdef(T)
             cor2cov!(x, T[5, 4, 3, 2])
             sym_mat = Symmetric(copy(x))
 

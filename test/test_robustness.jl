@@ -1,12 +1,16 @@
-using Test
-using NearestCorrelationMatrix
-using NearestCorrelationMatrix: alg_name
-using NearestCorrelationMatrix.Internals
-using LinearAlgebra: isposdef, Symmetric
 using JuMP, COSMO
 
-include("test_macros.jl")
-include("test_common.jl")
+function rand_negdef(::Type{T}, n) where {T}
+    while true
+        r = 2 * rand(T, n, n) .- one(T)
+        symmetric!(r)
+        r[diagind(r)] .= one(T)
+
+        !isposdef(r) && return r
+    end
+    return
+end
+
 
 function test_robust_reps(algtype::Type, nreps, size, T, test_pd; kwargs...)
     return @testset "$(size)×$(size)" begin
@@ -63,7 +67,7 @@ function test_robust(algtype::Type, T; cutoff = Inf, test_pd = false, kwargs...)
 end
 
 function test_robust(alg::NCMAlgorithm, T; cutoff = Inf, test_pd = false, kwargs...)
-    return @testset "$(alg_name(alg)) - $T" begin
+    return @testset "$(NCM.alg_name(alg)) - $T" begin
         cutoff < 10 && return nothing
         test_robust_reps(alg, 100, 10, T, test_pd; kwargs...)
         cutoff < 25 && return nothing

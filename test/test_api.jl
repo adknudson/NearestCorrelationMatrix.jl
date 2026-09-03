@@ -1,11 +1,5 @@
-using Test
-using NearestCorrelationMatrix
-
-include("test_macros.jl")
-include("test_common.jl")
-
 @testset "Common Solve API" begin
-    r0 = get_negdef_matrix(Float64)
+    r0 = default_negdef(Float64)
 
     # variants of NCMProblem
     @test_isdefined NCMProblem

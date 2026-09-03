@@ -1,7 +1,3 @@
-using Test
-using NearestCorrelationMatrix.Internals
-using LinearAlgebra: issymmetric
-
 """
     @test_isdefined s
 

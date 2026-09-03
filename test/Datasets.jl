@@ -4,6 +4,22 @@ using DataDeps
 using LinearAlgebra
 import MAT
 
+export
+    default_negdef,
+    bccd16,
+    beyu11,
+    bhwi01,
+    cor1399,
+    cor3120,
+    fing97,
+    high02,
+    mmb13,
+    tec03,
+    tyda99r1,
+    tyda99r2,
+    tyda99r3,
+    usgs13
+
 function __init__()
     register(
         DataDep(
@@ -79,6 +95,24 @@ function vec_to_mat(x::AbstractVector{T}; diag_val::Real = 1) where {T}
 
     return A
 end
+
+"""
+    default_negdef(T)
+
+Gets a 4×4 invalid correlation matrix for testing.
+"""
+function default_negdef(::Type{T}) where {T}
+    r = [
+        1.0 -0.2188 -0.79 0.7773
+        -0.2188 1.0 0.2559 -0.5977
+        -0.79 0.2559 1.0 0.2266
+        0.7773 -0.5977 0.2266 1.0
+    ]
+
+    return convert(Matrix{T}, r)
+end
+
+default_negdef() = default_negdef(Float64)
 
 """
 BCCD16 is a 3250×3250 invalid correlation matrix constructed from data for banks in 27 EU member states.
