@@ -1,10 +1,8 @@
 """
     NCMProblem(A, p=NullParameters(); kwargs...)
 
-Defines the semi-definite programming problem of finding the nearest correlation matrix to
-a given input matrix.
-
-## Mathematical Specification of a Correlation Matrix
+Defines the semi-definite programming problem of finding the nearest correlation matrix to a
+given input matrix.
 
 To define a `NCMProblem`, you only need to provide a square `AbstractMatrix` ``A``.
 
@@ -12,21 +10,19 @@ To define a `NCMProblem`, you only need to provide a square `AbstractMatrix` ``A
 
 ### Constructors
 
-There is only one constructor for a `NCMProblem`
-
 ```julia
 NCMProblem(A, p=NullParameters(); kwargs...)
 ```
 
-Parameters are optional, and if not given, then a `NullParameters()` singleton
-will be used, which will throw nice errors if you try to index non-existent
-parameters. Any extra keyword arguments are passed on to the solvers.
+Parameters are optional, and if not given, then a `NullParameters()` singleton will be used,
+which will throw nice errors if you try to index non-existent parameters. Any extra keyword
+arguments are stored in the `kwargs` field and forwarded on to the solvers.
 
 ### Fields
 
 - `A`: The input matrix. Must be square. Should be symmetric.
 - `p`: The parameters for the problem. Defaults to `NullParameters`. Currently unused.
-- `kwargs`: The keyword arguments passed on to the solvers.
+- `kwargs`: Extra keyword arguments passed on to the solvers.
 """
 struct NCMProblem{T, P, K}
     A::T
