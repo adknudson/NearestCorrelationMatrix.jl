@@ -9,6 +9,12 @@ as possible. Unlike `solve!`, this method will return the nearest correlation ma
 directly instead of a `NCMSolution` object. Additionally the solution is checked to be
 positive definite, and corrected if it is not.
 
+When a fixed-element mask is passed (via the `mask` keyword or on the problem), the result has
+an exact unit diagonal and retains the masked elements exactly. Because repairing positive
+definiteness perturbs every entry, strict PD and exact fixed-element feasibility cannot both be
+guaranteed: the fixed elements take precedence, and the result is positive definite up to
+``O(\\sqrt{\\mathrm{eps}})``.
+
 # Examples
 
 ```julia-repl
@@ -61,6 +67,12 @@ This is a "batteries included" method, and is designed to just work with as litt
 as possible. Unlike `solve!`, this method will return the nearest correlation matrix
 directly instead of a `NCMSolution` object. Additionally the solution is checked to be
 positive definite, and corrected if it is not.
+
+When a fixed-element mask is passed (via the `mask` keyword or on the problem), the result has
+an exact unit diagonal and retains the masked elements exactly. Because repairing positive
+definiteness perturbs every entry, strict PD and exact fixed-element feasibility cannot both be
+guaranteed: the fixed elements take precedence, and the result is positive definite up to
+``O(\\sqrt{\\mathrm{eps}})``.
 
 # Examples
 
