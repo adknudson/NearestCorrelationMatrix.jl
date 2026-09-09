@@ -42,8 +42,12 @@
         nearest_cor!(A)
         @test_iscorrelation A
 
-        # TODO: fing97 masked. Need to implement masking
-        # A, m = fing97()
+        # masked (lower-right 4×4 block held fixed)
+        A, m = fing97()
+        @test iscorrelation(A) == false
+        B = nearest_cor(A, AlternatingProjections(); mask = m)
+        @test_iscorrelation B
+        @test all(B[m] .== A[m])
     end
 
     @testset "HIGH02" begin
@@ -94,8 +98,12 @@
         nearest_cor!(A)
         @test_iscorrelation A
 
-        # TODO: usgs13 masked. Need to implement masking
-        # A, m = usgs13()
+        # masked (non-zero blocks held fixed)
+        A, m = usgs13()
+        @test iscorrelation(A) == false
+        B = nearest_cor(A, AlternatingProjections(); mask = m)
+        @test_iscorrelation B
+        @test all(B[m] .== A[m])
     end
 
 end
