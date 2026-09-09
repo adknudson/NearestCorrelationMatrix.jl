@@ -39,7 +39,7 @@ end
 
 Get the default algorithm type for a given input matrix.
 """
-default_algtype(::NCMProblem) = Newton
+default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AlternatingProjectionsAA
 
 """
     init(prob, alg, args...; kwargs...)
@@ -223,7 +223,7 @@ function CommonSolve.init(prob::NCMProblem, args...; kwargs...)
 end
 
 """
-    init(prob, nothing, args...; kwargs...)
+    init(prob, algtype::Nothing, args...; kwargs...)
 
 Initialize the solver with the default algorithm autotuned to the problem.
 """

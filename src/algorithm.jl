@@ -110,7 +110,7 @@ supports_parameterless_construction(::Type{<:NCMAlgorithm}) = false
 """
     construct_algorithm(algtype)
 
-Construct the algorithm without ant parameters. Throws an error if the algtype does not
+Construct the algorithm without any parameters. Throws an error if the algtype does not
 support parameterless construction.
 """
 function construct_algorithm(algtype::Type{<:NCMAlgorithm})
