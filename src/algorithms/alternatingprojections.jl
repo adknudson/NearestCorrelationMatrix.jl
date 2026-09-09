@@ -25,7 +25,7 @@ function autotune(::Type{AlternatingProjections}, prob::NCMProblem)
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)
-    mask = mask(solver)
+    mask = solver.mask
     return __inner_solve!(solver, alg, mask; kwargs...)
 end
 
