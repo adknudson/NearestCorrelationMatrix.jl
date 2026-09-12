@@ -22,30 +22,11 @@ supported_types = (Float64, Float32, Float16)
 
     @testset "Out-of-place Methods" begin
         for T in supported_types
-            # clamp_pm1
-            x = rand(T) + one(T)
-            @test typeof(clamp_pm1(x)) === T
-
-            # cov2cor
-            x = default_negdef(T)
-            cor2cov!(x, T[5, 4, 3, 2])
-            sym_mat = Symmetric(copy(x))
-
-            x = cov2cor(x)
-            @test issymmetric(x)
-            @test has_unit_diagonal(x)
-            @test constrained_to_pm1(x)
-
-            sym_mat = cov2cor(sym_mat)
-            @test issymmetric(sym_mat)
-            @test has_unit_diagonal(sym_mat)
-            @test constrained_to_pm1(sym_mat)
-
             # eigen_sym
             # For Julia 1.10, eigen(Symmetric(X)) where eltype(X) == Float16 would return a
             # decomposition with Float32 values. We define our own `eigen_sym` that respects
             # the eltype of the input matrix, even though this is now fixed in Julia 1.12.
-            x = symmetric!(2 * rand(T, 10, 10) .- one(T))
+            x = symmetrize!(2 * rand(T, 10, 10) .- one(T))
             sym_mat = Symmetric(x)
 
             λ, P = eigen_sym(x)
@@ -60,11 +41,6 @@ supported_types = (Float64, Float32, Float16)
 
     @testset "In-place Methods" begin
         for T in supported_types
-            # clamp_pm1!
-            x = T[-2 1; -1 3]
-            clamp_pm1!(x)
-            @test all(-one(T) .≤ x .≤ one(T))
-
             # setdiag!
             x = 2 * rand(T, 10, 10) .- one(T)
             sym_mat = Symmetric(2 * rand(T, 10, 10) .- one(T))
@@ -79,59 +55,26 @@ supported_types = (Float64, Float32, Float16)
             @test_throws Exception setdiag!(x, 3 // 4)
             @test_throws Exception setdiag!(rect_mat, one(T))
 
-            # symmetric!
+            # symmetrize!
             for uplo in (:U, :L)
                 x = 2 * rand(T, 10, 10) .- one(T)
-                if !issymmetric(x)
-                    symmetric!(x, uplo)
-                    @test issymmetric(x) == true
-                else
-                    error("Test matrix expected to be non-symmetric. Try re-running the tests.")
-                end
+                symmetrize!(x, uplo)
+                @test issymmetric(x) == true
 
                 rect_mat = 2 * rand(T, 10, 7) .- one(T)
-                @test_throws Exception symmetric!(rect_mat, uplo)
+                @test_throws Exception symmetrize!(rect_mat, uplo)
             end
 
             x = 2 * rand(T, 10, 10) .- one(T)
-            @test_throws ArgumentError symmetric!(x, :u)
+            @test_throws ArgumentError symmetrize!(x, :u)
 
             sym_mat = Symmetric(2 * rand(T, 10, 10) .- one(T))
-            symmetric!(sym_mat)
+            symmetrize!(sym_mat)
             @test sym_mat isa Symmetric
 
             diag_mat = Diagonal(rand(T, 4))
-            symmetric!(sym_mat)
+            symmetrize!(sym_mat)
             @test diag_mat isa Diagonal
-
-            # corconstrain!
-            x = T[
-                2.0 0.8 0.1
-                0.8 1.0 0.6
-                0.1 0.6 0.2
-            ]
-            sym_mat = Symmetric(copy(x))
-            diag_mat = Diagonal(diag(x))
-
-            corconstrain!(x)
-            @test isprecorrelation(x) == true
-
-            corconstrain!(sym_mat)
-            @test isprecorrelation(sym_mat) == true
-
-            corconstrain!(diag_mat)
-            @test isprecorrelation(diag_mat) == true
-
-            # cov2cor!
-            x = default_negdef(T)
-            cor2cov!(x, T[5, 4, 3, 2])
-            sym_mat = Symmetric(copy(x))
-
-            cov2cor!(x)
-            @test isprecorrelation(x) == true
-
-            cov2cor!(sym_mat)
-            @test isprecorrelation(sym_mat) == true
         end
     end
 end

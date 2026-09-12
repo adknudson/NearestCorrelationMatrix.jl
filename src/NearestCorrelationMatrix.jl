@@ -17,8 +17,6 @@ include("NCMSolution.jl")
 
 include("simple_interface.jl")
 
-include("projections.jl")
-
 include("algorithms/Newton.jl")
 include("algorithms/DirectProjection.jl")
 include("algorithms/AlternatingProjections.jl")

@@ -85,12 +85,14 @@ function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
     if sol.solver.ensure_pd && !isposdef(sol.X)
         # Strict PD and exact fixed-element feasibility cannot both be guaranteed: repairing
         # definiteness perturbs every entry, so re-apply the mask afterwards. The fixed elements
-        # (and unit diagonal) take precedence — the result is PD up to O(√eps).
+        # (and unit diagonal) take precedence - the result is PD up to O(√eps).
         project_psd!(sol.X, sqrt(eps(eltype(sol.X))))
-        cov2cor!(sol.X)
+
         if sol.solver.mask !== nothing
             project_f!(sol.X, sol.solver.A_orig, sol.solver.mask)
         end
+
+        project_unit!(sol.X)
     end
 
     return sol

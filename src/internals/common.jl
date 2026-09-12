@@ -1,37 +1,20 @@
 using LinearAlgebra
 
 export
-    clamp_pm1,
-    clamp_pm1!,
+    clamp_cor,
     setdiag!,
-    sym_uplo,
-    symmetric!,
-    corconstrain!,
-    cov2cor,
+    symmetrize!,
     cov2cor!,
-    cor2cov,
-    cor2cov!,
     eigen_sym
 
 
 """
-    clamp_pm1(x::Real)
+    clamp_cor(x::Real)
 
 Constrain a value between -1 and 1.
 """
-clamp_pm1(x::Real) = clamp(x, -one(x), one(x))
-
-"""
-    clamp_pm1!(A::AbstractArray)
-
-Contstrain all values of an array to be between -1 and 1.
-"""
-function clamp_pm1!(A::AbstractArray{T, N}) where {T, N}
-    @inbounds for i in eachindex(A)
-        A[i] = clamp_pm1(A[i])
-    end
-    return A
-end
+clamp_cor(x::Real) = clamp(x, -1, 1)
+clamp_cor(x) = x
 
 """
     setdiag!(X, v)
@@ -39,8 +22,6 @@ end
 Set the diagonal elements of ``X`` to ``v``.
 """
 function setdiag!(X::AbstractMatrix{T}, v::T) where {T}
-    require_square(X)
-
     for i in diagind(X)
         @inbounds X[i] = v
     end
@@ -49,108 +30,29 @@ function setdiag!(X::AbstractMatrix{T}, v::T) where {T}
 end
 
 """
-    sym_uplo(uplo::Char)
-
-Convert the `'U'` and `'L'` characters to their corresponding symbols (`:U` and `:L`).
-"""
-function sym_uplo(uplo::Char)
-    if uplo == 'U'
-        return :U
-    elseif uplo == 'L'
-        return :L
-    else
-        throw_uplo()
-    end
-end
-
-@noinline throw_uplo() =
-    throw(ArgumentError("uplo argument must be either :U (upper) or :L (lower)"))
-
-"""
-    symmetric!(X, uplo=:U)
+    symmetrize!(X, uplo=:U)
 
 Make ``X`` symmetric in place by copying either the upper (`uplo=:U`) or lower (`uplo=:L`)
 triangle of ``X``.
 """
-function symmetric!(X::AbstractMatrix, uplo::Symbol = :U)
-    if uplo === :U
-        _copytolower!(X)
-    elseif uplo === :L
-        _copytoupper!(X)
-    else
-        throw_uplo()
-    end
-
-    return X
-end
-
-symmetric!(X::Symmetric, ::Symbol = :U) = X
-symmetric!(X::Diagonal, ::Symbol = :U) = X
-
-function _copytolower!(X::AbstractMatrix)
-    require_square(X)
-
+function symmetrize!(X::AbstractMatrix, uplo::Symbol = :U)
     nr, nc = size(X)
-    for j in 1:(nc - 1)
-        for i in (j + 1):nr
-            @inbounds X[i, j] = X[j, i]
+    nr == nc || error("X must be a square matrix.")
+    uplo ∈ (:U, :L)  || error("uplo must be in (:U, :L)")
+    if uplo === :U # copy upper to lower
+        for j in 1:(nc - 1)
+            for i in (j + 1):nr
+                X[i, j] = X[j, i]
+            end
+        end
+    else # copy lower to upper
+        for j in 1:(nc - 1)
+            for i in (j + 1):nr
+                X[j, i] = X[i, j]
+            end
         end
     end
     return X
-end
-
-function _copytoupper!(X::AbstractMatrix)
-    require_square(X)
-
-    nr, nc = size(X)
-    for j in 1:(nc - 1)
-        for i in (j + 1):nr
-            @inbounds X[j, i] = X[i, j]
-        end
-    end
-    return X
-end
-
-"""
-    corconstrain!(X, uplo=:U)
-
-Constrain ``X`` in place to be a pre-correlation.
-
-A pre-correlation matrix must:
-
-- be square
-- be symmetric
-- be constrained to ±1
-- have diagonals equal to 1
-"""
-function corconstrain!(X::AbstractMatrix{T}, uplo::Symbol = :U) where {T}
-    clamp_pm1!(X)
-    setdiag!(X, one(T))
-    symmetric!(X, uplo)
-    return X
-end
-
-function corconstrain!(X::Symmetric{T}, ::Symbol = :U) where {T}
-    clamp_pm1!(X.data)
-    setdiag!(X, one(T))
-    symmetric!(X.data, sym_uplo(X.uplo))
-    return X
-end
-
-function corconstrain!(X::Diagonal{T}, ::Symbol = :U) where {T}
-    fill!(X.diag, one(T))
-    return X
-end
-
-"""
-    cov2cor(X)
-
-Compute the correlation matrix from the covariance matrix. More generally this transforms
-the input matrix ``X`` into a correlation matrix without changing its positive-definiteness.
-"""
-function cov2cor(X::AbstractMatrix{T}) where {T}
-    D = sqrt(inv(Diagonal(X)))
-    return corconstrain!(D * X * D)
 end
 
 """
@@ -160,42 +62,48 @@ Compute the correlation matrix from the covariance matrix ``X`` and overwrite it
 More generally this transforms the input matrix ``X`` into a correlation matrix without
 changing its positive-definiteness.
 """
-function cov2cor!(X::AbstractMatrix{T}) where {T}
-    D = sqrt(inv(Diagonal(X)))
-    lmul!(D, X)
-    rmul!(X, D)
-    setdiag!(X, one(T))
-    symmetric!(X)
-    return X
-end
-
-function cov2cor!(X::Symmetric{T}) where {T}
-    symmetric!(X.data, sym_uplo(X.uplo))
-    cov2cor!(X.data)
-    return X
-end
-
-"""
-    cor2cov(C, s)
-"""
-cor2cov(C::AbstractMatrix{T}, s::AbstractVector{T}) where {T} = cor2cov!(copy(C), s)
-
-"""
-    cor2cov!(C, s)
-
-Compute the covariance matrix from the correlation matrix ``C`` and a vector of variances ``s``.
-"""
-function cor2cov!(C::AbstractMatrix{T}, s::AbstractVector{T}) where {T}
-    for i in CartesianIndices(size(C))
-        @inbounds C[i] *= s[i[1]] * s[i[2]]
+function cov2cor!(X::AbstractMatrix)
+    Base.require_one_based_indexing(X)
+    s = map(sqrt, view(X, diagind(X)))
+    n = length(s)
+    size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
+    for j = 1:n
+        sj = s[j]
+        for i = 1:(j - 1)
+            X[i, j] = adjoint(X[j, i])
+        end
+        C[j, j] = oneunit(C[j, j])
+        for i = (j + 1):n
+            C[i, j] = clamp_cor(C[i, j] / (s[i] * sj))
+        end
     end
-    return C
+    return X
 end
 
-function cor2cov!(C::Symmetric{T}, s::AbstractVector{T}) where {T}
-    symmetric!(C.data)
-    cor2cov!(C.data, s)
-    return C
+# Preserve structure of Symmetric covariance matrices
+function cov2cor!(X::Symmetric{<:Real})
+    s = map(sqrt, view(X, diagind(X)))
+    n = length(s)
+    size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
+    A = parent(X)
+    if X.uplo === 'U'
+        for j = 1:n
+            sj = s[j]
+            for i = 1:(j-1)
+                A[i,j] = clamp_cor(A[i,j] / (s[i] * sj))
+            end
+            A[j,j] = oneunit(A[j,j])
+        end
+    else
+        for j = 1:n
+            sj = s[j]
+            A[j,j] = oneunit(A[j,j])
+            for i = (j+1):n
+                A[i,j] = clamp_cor(A[i,j] / (s[i] * sj))
+            end
+        end
+    end
+    return X
 end
 
 """

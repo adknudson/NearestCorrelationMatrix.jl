@@ -125,7 +125,7 @@ function CommonSolve.init(
                 "$(alg_name(alg)) does not support Symmetric types. " *
                     "Creating a symmetric copy of A.data"
             )
-            symmetric!(copy(A.data), sym_uplo(A.uplo))
+            Matrix(A)
         end
     elseif A isa Matrix
         verbose && println("Creating a copy of A")
@@ -149,7 +149,7 @@ function CommonSolve.init(
                     "Input matrix is not symmetric. Copying the " *
                         "$(uplo == :U ? "upper" : "lower") part of the matrix"
                 )
-                symmetric!(A, uplo)
+                symmetrize!(A, uplo)
             end
         else
             error(
