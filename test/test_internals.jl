@@ -42,6 +42,9 @@ supported_types = (Float64, Float32, Float16)
             @test constrained_to_pm1(sym_mat)
 
             # eigen_sym
+            # For Julia 1.10, eigen(Symmetric(X)) where eltype(X) == Float16 would return a
+            # decomposition with Float32 values. We define our own `eigen_sym` that respects
+            # the eltype of the input matrix, even though this is now fixed in Julia 1.12.
             x = symmetric!(2 * rand(T, 10, 10) .- one(T))
             sym_mat = Symmetric(x)
 
