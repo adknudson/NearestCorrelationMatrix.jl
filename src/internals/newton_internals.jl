@@ -1,7 +1,9 @@
-using LinearAlgebra
-
-export dual_gradient!,
-    primal_feasible_solution!, omega_matrix, precondition_matrix!, preconditioned_cg!
+export
+    dual_gradient!,
+    primal_feasible_solution!,
+    omega_matrix,
+    precondition_matrix!,
+    preconditioned_cg!
 
 """
     dual_gradient(∇fy, y, λ, P, b)

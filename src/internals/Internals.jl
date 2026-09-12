@@ -1,5 +1,7 @@
 module Internals
 
+using LinearAlgebra
+
 include("common.jl")
 include("projections.jl")
 include("checks.jl")

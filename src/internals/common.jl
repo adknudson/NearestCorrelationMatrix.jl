@@ -1,5 +1,3 @@
-using LinearAlgebra
-
 export
     clamp_cor,
     setdiag!,
@@ -67,13 +65,13 @@ function cov2cor!(X::AbstractMatrix)
     s = map(sqrt, view(X, diagind(X)))
     n = length(s)
     size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
-    for j = 1:n
+    for j in 1:n
         sj = s[j]
-        for i = 1:(j - 1)
+        for i in 1:(j - 1)
             X[i, j] = adjoint(X[j, i])
         end
         C[j, j] = oneunit(C[j, j])
-        for i = (j + 1):n
+        for i in (j + 1):n
             C[i, j] = clamp_cor(C[i, j] / (s[i] * sj))
         end
     end
@@ -87,19 +85,19 @@ function cov2cor!(X::Symmetric{<:Real})
     size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
     A = parent(X)
     if X.uplo === 'U'
-        for j = 1:n
+        for j in 1:n
             sj = s[j]
-            for i = 1:(j-1)
-                A[i,j] = clamp_cor(A[i,j] / (s[i] * sj))
+            for i in 1:(j - 1)
+                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
             end
-            A[j,j] = oneunit(A[j,j])
+            A[j, j] = oneunit(A[j, j])
         end
     else
-        for j = 1:n
+        for j in 1:n
             sj = s[j]
-            A[j,j] = oneunit(A[j,j])
-            for i = (j+1):n
-                A[i,j] = clamp_cor(A[i,j] / (s[i] * sj))
+            A[j, j] = oneunit(A[j, j])
+            for i in (j + 1):n
+                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
             end
         end
     end

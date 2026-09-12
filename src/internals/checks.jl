@@ -1,6 +1,5 @@
-using LinearAlgebra: diag, eigmin
-
-export issquare,
+export
+    issquare,
     require_square,
     require_matrix,
     require_real,

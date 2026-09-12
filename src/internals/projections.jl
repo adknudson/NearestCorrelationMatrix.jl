@@ -61,6 +61,7 @@ The minimum eigenvalue is constrained to `δ`.
 function project_psd!(X, δ)
     Z = Matrix{eltype(X)}(undef, size(X))
     project_psd!(X, X, δ, Z)
+    return X
 end
 
 """

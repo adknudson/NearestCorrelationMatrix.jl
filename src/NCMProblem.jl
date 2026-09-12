@@ -47,7 +47,7 @@ end
 normalize_mask(::Nothing) = nothing
 
 function normalize_mask(B::BitMatrix)
-    for i in 1:(n-1), j in (i+1):n
+    for i in 1:(n - 1), j in (i + 1):n
         b = B[i, j] || B[j, i]
         B[i, j] = b
         B[j, i] = b

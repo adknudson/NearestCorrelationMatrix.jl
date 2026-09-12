@@ -22,9 +22,9 @@ end
 
 function init_cacheval(::AlternatingProjections, A; kwargs...)
     scratch = similar(A)
-    X       = similar(A)
-    R       = similar(A)
-    S       = similar(A)
+    X = similar(A)
+    R = similar(A)
+    S = similar(A)
     return APCache{typeof(A)}(scratch, X, R, S)
 end
 
