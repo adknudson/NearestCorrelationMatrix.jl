@@ -2,25 +2,28 @@ module NearestCorrelationMatrix
 
 using LinearAlgebra
 using CommonSolve: CommonSolve, init, solve, solve!
-using UnPack
 
 include("internals/Internals.jl")
 using .Internals
 
+
 struct NullParameters end
 
-include("problem.jl")
-include("algorithm.jl")
-include("solver.jl")
-include("solution.jl")
+
+include("NCMProblem.jl")
+include("NCMAlgorithm.jl")
+include("NCMSolver.jl")
+include("NCMSolution.jl")
 
 include("simple_interface.jl")
 
-include("algorithms/newton.jl")
-include("algorithms/directprojection.jl")
-include("algorithms/alternatingprojections.jl")
-include("algorithms/alternatingprojections_aa.jl")
-include("algorithms/extension_algs.jl")
+include("projections.jl")
+
+include("algorithms/Newton.jl")
+include("algorithms/DirectProjection.jl")
+include("algorithms/AlternatingProjections.jl")
+include("algorithms/AlternatingProjectionsAA.jl")
+include("algorithms/JuMPAlgorithm.jl")
 
 export
     # domain types
@@ -40,9 +43,9 @@ export
     nearest_cor!,
     # algorithms
     Newton,
+    DirectProjection,
     AlternatingProjections,
     AlternatingProjectionsAA,
-    DirectProjection,
     JuMPAlgorithm
 
 end

@@ -36,9 +36,9 @@ julia> alg = autotune(Newton, prob);
 autotune(algtype::Type{<:NCMAlgorithm}, ::NCMProblem) = construct_algorithm(algtype)
 
 """
-    init_cacheval(alg, args...)
+    init_cacheval(alg, A; kwargs...)
 """
-init_cacheval(::NCMAlgorithm, args...) = nothing
+init_cacheval(::NCMAlgorithm, ::Any; kwargs...) = nothing
 
 """
     default_tol(::Type)
@@ -60,7 +60,6 @@ subspace each iteration). When `false`, passing a mask throws an informative err
 `false`.
 """
 supports_mask(::NCMAlgorithm) = false
-supports_mask(::Type{<:NCMAlgorithm}) = false
 
 """
     default_iters(alg, A)

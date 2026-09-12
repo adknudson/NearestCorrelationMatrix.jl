@@ -30,7 +30,7 @@ function NearestCorrelationMatrix.solve!(solver::NCMSolver, alg::JuMPAlgorithm)
 end
 
 function NearestCorrelationMatrix.init_cacheval(
-        alg::JuMPAlgorithm, A, maxiters, abstol, reltol, verbose
+        alg::JuMPAlgorithm, A; kwargs...
     )
     n = size(A, 1)
 

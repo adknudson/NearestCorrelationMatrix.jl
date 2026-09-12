@@ -15,11 +15,10 @@ Common interface for solving NCM problems. Algorithm-specific cache is stored in
 - `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
   Defaults to `false`.
 - `verbose`: Whether to print extra information. Defaults to `false`.
-- `mask`: The fixed-element mask (a normalized `Bool` matrix), or `nothing` if unmasked.
-- `A_orig`: A copy of the (transformed) input holding the fixed-element values, used as the
-  value source for `project_f!`. `nothing` when there is no mask.
+- `mask`: The fixed-element mask, or `nothing` if unmasked.
+- `A_orig`: The original values of A to be used when a mask is supplied.
 """
-mutable struct NCMSolver{TA, P, Talg, Tc, Ttol, Tm, TAorig}
+mutable struct NCMSolver{TA, P, Talg, Tc, Ttol, Tm}
     A::TA           # the input matrix
     p::P            # parameters
     alg::Talg       # ncm algorithm
@@ -30,8 +29,8 @@ mutable struct NCMSolver{TA, P, Talg, Tc, Ttol, Tm, TAorig}
     maxiters::Int   # maximum number of iterations
     ensure_pd::Bool # ensures that the resulting matrix is positive definite
     verbose::Bool   # whether to print extra information
-    mask::Tm        # fixed-element mask (a Bool matrix), or nothing
-    A_orig::TAorig  # copy of the (transformed) input holding the fixed-element values; nothing if unmasked
+    mask::Tm        # fixed-element mask, or nothing
+    A_orig::TA      # a copy of A, or an alias of A if no mask is given
 end
 
 """
@@ -92,7 +91,7 @@ function CommonSolve.init(
     # problem; otherwise fall back to the problem's (already-normalized) mask, then to nothing.
     mask = if mask !== nothing
         verbose && println("Using fixed-element mask")
-        normalize_mask(prob.A, mask)
+        normalize_mask(mask)
     elseif prob.mask !== nothing
         verbose && println("Using fixed-element mask from the problem")
         prob.mask
@@ -111,7 +110,8 @@ function CommonSolve.init(
         )
     end
 
-    @unpack A, p = prob
+    A = prob.A
+    p = prob.p
 
     A = if alias_A
         verbose && println("Aliasing A")
@@ -185,17 +185,17 @@ function CommonSolve.init(
     # Capture the original (transformed) input as the value source for fixed elements. With
     # alias_A=true the algorithms overwrite A in place, so the values must be saved here at
     # init time. Only allocated for masked problems.
-    A_orig = mask === nothing ? nothing : copy(A)
+    A_orig = mask === nothing ? A : copy(A)
 
     # Guard against type mismatch for user-specified reltol/abstol
     reltol = real(eltype(A))(reltol)
     abstol = real(eltype(A))(abstol)
 
-    cacheval = init_cacheval(alg, A, maxiters, abstol, reltol, verbose)
+    cacheval = init_cacheval(alg, A; maxiters = maxiters, abstol = abstol, reltol = reltol, verbose = verbose)
     isfresh = true
     Tc = typeof(cacheval)
 
-    solver = NCMSolver{typeof(A), typeof(p), typeof(alg), Tc, typeof(reltol), Union{Nothing, Matrix{Bool}}, typeof(A_orig)}(
+    solver = NCMSolver{typeof(A), typeof(p), typeof(alg), Tc, typeof(reltol), Union{Nothing, typeof(mask)}}(
         A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, ensure_pd, verbose, mask, A_orig
     )
 
