@@ -11,9 +11,7 @@ export
     cov2cor!,
     cor2cov,
     cor2cov!,
-    eigen_sym,
-    project_psd!,
-    project_psd
+    eigen_sym
 
 
 """
@@ -219,37 +217,3 @@ function eigen_sym(X::Symmetric{Float16})
 end
 
 eigen_sym(X, uplo = :U) = eigen_sym(Symmetric(X, uplo))
-
-"""
-    project_psd!(X, ϵ)
-
-Project ``X`` onto the cone of positive semi-definite matrices. This method works by
-computing the eigen decomposition of ``X`` and replacing eigenvalues below a threshold with
-the threshold value, and then reconstructing the matrix.
-"""
-function project_psd!(X::AbstractMatrix{T}, ϵ::T = zero(T)) where {T}
-    ϵ = max(ϵ, zero(T))
-    λ, P = eigen_sym(X)
-    replace!(x -> max(x, ϵ), λ)
-    X .= P * Diagonal(λ) * P'
-    return X
-end
-
-function project_psd!(X::Symmetric{T}, ϵ::T = zero(T)) where {T}
-    ϵ = max(ϵ, zero(T))
-    λ, P = eigen_sym(X)
-    replace!(x -> max(x, ϵ), λ)
-    X.data .= P * Diagonal(λ) * P'
-    return X
-end
-
-"""
-    project_psd(X, ϵ)
-
-Project ``X`` onto the cone of positive semi-definite matrices. This method works by
-computing the eigen decomposition of ``X`` and replacing eigenvalues below a threshold with
-the threshold value, and then reconstructing the matrix.
-"""
-function project_psd(X::AbstractMatrix{T}, ϵ::T = zero(T)) where {T}
-    return project_psd!(copy(X), ϵ)
-end
