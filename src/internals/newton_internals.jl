@@ -94,7 +94,10 @@ function omega_matrix(λ)
     λr = @view λ[begin:r]
     λs = @view λ[(r + 1):end]
 
-    @tullio W[i, j] := λr[i] / (λr[i] - λs[j])
+    W = Matrix{eltype(λ)}(undef, length(λr), length(λs))
+    for i in eachindex(λr), j in eachindex(λs)
+        W[i, j] = λr[i] / (λr[i] - λs[j])
+    end
 
     return W
 end
@@ -195,7 +198,9 @@ function precondition_matrix!(v, W, P, Ω)
     Q = P .* P
     M = Ω * Q
 
-    @tullio v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
+    for i in eachindex(v)
+        v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
+    end
 
     ϵ = sqrt(eps(T))
     replace!(x -> max(x, ϵ), v)
