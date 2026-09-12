@@ -2,7 +2,6 @@ module NCMJuMPExt
 
 using NearestCorrelationMatrix
 using NearestCorrelationMatrix: build_ncm_solution
-using NearestCorrelationMatrix.Internals: project_psd!, cov2cor!
 
 using JuMP
 using LinearAlgebra
@@ -23,8 +22,6 @@ function NearestCorrelationMatrix.solve!(solver::NCMSolver, alg::JuMPAlgorithm)
     end
 
     X = JuMP.value(model[:X])
-    project_psd!(X)
-    cov2cor!(X)
 
     return build_ncm_solution(alg, X, nothing, solver)
 end

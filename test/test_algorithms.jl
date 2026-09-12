@@ -33,7 +33,7 @@ end
 @testset "Constructors" begin
     prob = NCMProblem(rand(4, 4))
 
-    for algtype in (Newton, AlternatingProjections, AlternatingProjectionsAA, DirectProjection)
+    for algtype in (Newton, AlternatingProjections, DirectProjection)
         @test NCM.supports_parameterless_construction(algtype) == true
 
         alg = NCM.construct_algorithm(algtype)
@@ -51,5 +51,4 @@ end
     test_simple(Newton)
     test_simple(DirectProjection)
     test_simple(AlternatingProjections)
-    test_simple(AlternatingProjectionsAA)
 end

@@ -26,8 +26,5 @@ include("test_simple_api.jl")
 include("test_algorithms.jl")
 include("test_real_world.jl")
 
-# Masking (fixed elements)
-include("test_mask.jl")
-
 # Extension Packages
 include("test_jump.jl")

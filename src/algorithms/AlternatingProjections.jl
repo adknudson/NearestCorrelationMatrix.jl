@@ -50,10 +50,10 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
     R = solver.cacheval.R
     ΔS = solver.cacheval.S
 
-    i = 0
+    iter = 0
     resid = Inf
 
-    while i < solver.maxiters && resid ≥ solver.reltol
+    while iter < solver.maxiters && resid ≥ solver.reltol
         R .= Y .- ΔS
         project_psd!(X, R, tau, scratch)
         ΔS .= X .- R
@@ -66,8 +66,8 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
         project_unit!(Y)
 
         resid = norm(Y .- X) / norm(Y)
-        i += 1
+        iter += 1
     end
 
-    return build_ncm_solution(alg, Y, resid, solver; iters = i)
+    return build_ncm_solution(alg, Y, resid, solver; iters = iter)
 end

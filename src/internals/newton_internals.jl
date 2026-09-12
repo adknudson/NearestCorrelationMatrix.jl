@@ -1,4 +1,4 @@
-using LinearAlgebra, Tullio
+using LinearAlgebra
 
 export dual_gradient!,
     primal_feasible_solution!, omega_matrix, precondition_matrix!, preconditioned_cg!

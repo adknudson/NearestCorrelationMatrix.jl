@@ -42,7 +42,6 @@
         nearest_cor!(A)
         @test_iscorrelation A
 
-        # masked (lower-right 4×4 block held fixed)
         A, m = fing97()
         @test iscorrelation(A) == false
         B = nearest_cor(A, AlternatingProjections(); mask = m)
@@ -98,7 +97,6 @@
         nearest_cor!(A)
         @test_iscorrelation A
 
-        # masked (non-zero blocks held fixed)
         A, m = usgs13()
         @test iscorrelation(A) == false
         B = nearest_cor(A, AlternatingProjections(); mask = m)

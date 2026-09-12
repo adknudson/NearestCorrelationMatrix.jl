@@ -38,7 +38,7 @@ end
 
 Get the default algorithm type for a given input matrix.
 """
-default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AlternatingProjectionsAA
+default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AlternatingProjections
 
 """
     init(prob, alg, args...; kwargs...)
