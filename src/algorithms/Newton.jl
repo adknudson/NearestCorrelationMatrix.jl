@@ -47,7 +47,7 @@ function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
     elseif n ≤ 1000
         1.0e-4
     else
-        5.0e-5
+        5.0e-4
     end
 
     return Newton(; tau = tau)
