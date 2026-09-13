@@ -20,6 +20,7 @@ include("simple_interface.jl")
 include("algorithms/Newton.jl")
 include("algorithms/DirectProjection.jl")
 include("algorithms/AlternatingProjections.jl")
+include("algorithms/AcceleratedAP.jl")
 include("algorithms/JuMPAlgorithm.jl")
 
 export
@@ -39,9 +40,10 @@ export
     nearest_cor,
     nearest_cor!,
     # algorithms
-    Newton,
-    DirectProjection,
+    AcceleratedAP,
     AlternatingProjections,
-    JuMPAlgorithm
+    DirectProjection,
+    JuMPAlgorithm,
+    Newton
 
 end
