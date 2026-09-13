@@ -49,13 +49,13 @@ Initialize the solver with the given algorithm.
 
 ## Keyword Arguments
 
-- `alias_A`: Whether to alias the matrix ``A`` or use a copy by default. When `true`,
-  algorithms that operate in place can save memory by reusing ``A``. Defaults to `true` if
-  the algorithm is known not to modify ``A``, and `false` otherwise.
 - `mask`: An optional fixed-element mask. For every upper-triangular position ``(i, j)`` with
   ``i < j`` where ``mask[i, j]`` is truthy, the solution must retain the value ``A[i, j]``. The
   mask is normalized and symmetrized. Requires an algorithm that supports `supports_mask`.
   Defaults to `nothing` (no elements held fixed).
+- `alias_A`: Whether to alias the matrix ``A`` or use a copy by default. When `true`,
+  algorithms that operate in place can save memory by reusing ``A``. Defaults to `true` if
+  the algorithm is known not to modify ``A``, and `false` otherwise.
 - `abstol`: The absolute tolerance. Defaults to `√(eps(eltype(A)))`.
 - `reltol`: The relative tolerance. Defaults to `√(eps(eltype(A)))`.
 - `maxiters`: The number of iterations allowed. Defaults to `size(A,1)`
@@ -70,6 +70,9 @@ Initialize the solver with the given algorithm.
   if the algorithm doesn't fully support `Float16` values in a stable way.
 - `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
   Defaults to `false`.
+- `min_eigenvalue`: The minimum eigenvalue to enforce when `ensure_pd` is `true`. Defaults to
+  `nothing`, in which case it is either unused or set to a reasonable value depending on the
+  problem parameters.
 - `verbose`: Whether to print extra information. Defaults to `false`.
 """
 function CommonSolve.init(

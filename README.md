@@ -71,6 +71,10 @@ nearest_cor!(r) # computes NCM and overwrites r
 
 #### General Controls
 
+- `mask`: An optional fixed-element mask. For every upper-triangular position ``(i, j)`` with
+  ``i < j`` where ``mask[i, j]`` is truthy, the solution must retain the value ``A[i, j]``. The
+  mask is normalized and symmetrized. Requires an algorithm that supports `supports_mask`.
+  Defaults to `nothing` (no elements held fixed).
 - `alias_A`: Whether to alias the matrix ``A`` or use a copy by default. When `true`,
   algorithms that operate in place can save memory by reusing ``A``. Defaults to `true` if
   the algorithm is known not to modify ``A``, and `false` otherwise.
@@ -85,6 +89,9 @@ nearest_cor!(r) # computes NCM and overwrites r
   if the algorithm doesn't fully support `Float16` values in a stable way.
 - `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
   Defaults to `false`.
+- `min_eigenvalue`: The minimum eigenvalue to enforce when `ensure_pd` is `true`. Defaults to
+  `nothing`, in which case it is either unused or set to a reasonable value depending on the
+  problem parameters.
 - `verbose`: Whether to print extra information. Defaults to `false`.
 
 #### Solver Controls
@@ -160,6 +167,7 @@ The following algorithms are implemented:
 
 - `Newton`: An accurate and quadratically convergent algorithm
 - `AlternatingProjections`: A simple linearly convergent algorithm
+- `AcceleratedAP`: Anderson accelerated version of `AlternatingProjections`
 - `DirectProjection`: A fast, one-step projection onto the set of correlation matrices
 
 The default algorithm is the Newton method, which offers a great balance between accuracy and speed.
@@ -229,6 +237,7 @@ modifies_in_place(::MyAlgorithm) = true
 supports_float16(::MyAlgorithm) = false
 supports_symmetric(::MyAlgorithm) = false
 supports_parameterless_construction(::MyAlgorithm) = false
+supports_mask(::Type{<:MyAlgorithm}) = false
 ```
 
 
