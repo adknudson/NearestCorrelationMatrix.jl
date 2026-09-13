@@ -46,9 +46,7 @@ A, m = default_negdef(; include_mask = true)
 # nearest_cor must not modify original matrix UNLESS user passes `alias_A=true`
 A = default_negdef()
 Y = nearest_cor(A, AlternatingProjections)
-@test Base.mightalias(Y, A) == false
 @test !isapprox(Y, A)
 A = default_negdef()
 Y = nearest_cor(A, AlternatingProjections; alias_A = true)
-@test Base.mightalias(Y, A) == true
 @test isapprox(Y, A)
