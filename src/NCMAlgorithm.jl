@@ -10,8 +10,8 @@ abstract type NCMAlgorithm end
 
 Get the simple name for the NCM algorithm type.
 """
-alg_name(::Type{T}) where {T <: NCMAlgorithm} = (isempty(T.parameters) ? T : T.name.wrapper)
-alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
+alg_name(::Type{T}) where {T <: NCMAlgorithm} = nameof(T)
+alg_name(alg::NCMAlgorithm) = nameof(typeof(alg))
 
 """
     autotune(algtype, prob)

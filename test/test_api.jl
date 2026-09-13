@@ -14,13 +14,13 @@
     @test init(prob) isa NCMSolver
 
     # init with an algtype must return the correct algtype
-    for algtype in (AlternatingProjections, Newton, DirectProjection)
+    for algtype in internal_algtypes
         solver = init(prob, algtype)
         @test solver.alg isa algtype
     end
 
     # solve with an algtype must return the correct algtype (#31)
-    for algtype in (AlternatingProjections, Newton, DirectProjection)
+    for algtype in internal_algtypes
         sol = solve(prob, algtype)
         @test sol.alg isa algtype
     end

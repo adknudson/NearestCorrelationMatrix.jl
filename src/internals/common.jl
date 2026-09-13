@@ -1,57 +1,19 @@
 export
     clamp_cor,
-    setdiag!,
-    symmetrize!,
     cov2cor!,
-    eigen_sym
+    eigen_sym,
+    setdiag!,
+    symmetrize!
 
 
 """
+    clamp_cor(x::Real)
     clamp_cor(x::Real)
 
 Constrain a value between -1 and 1.
 """
 clamp_cor(x::Real) = clamp(x, -1, 1)
 clamp_cor(x) = x
-
-"""
-    setdiag!(X, v)
-
-Set the diagonal elements of ``X`` to ``v``.
-"""
-function setdiag!(X::AbstractMatrix{T}, v::T) where {T}
-    for i in diagind(X)
-        @inbounds X[i] = v
-    end
-
-    return X
-end
-
-"""
-    symmetrize!(X, uplo=:U)
-
-Make ``X`` symmetric in place by copying either the upper (`uplo=:U`) or lower (`uplo=:L`)
-triangle of ``X``.
-"""
-function symmetrize!(X::AbstractMatrix, uplo::Symbol = :U)
-    nr, nc = size(X)
-    nr == nc || error("X must be a square matrix.")
-    uplo ∈ (:U, :L)  || error("uplo must be in (:U, :L)")
-    if uplo === :U # copy upper to lower
-        for j in 1:(nc - 1)
-            for i in (j + 1):nr
-                X[i, j] = X[j, i]
-            end
-        end
-    else # copy lower to upper
-        for j in 1:(nc - 1)
-            for i in (j + 1):nr
-                X[j, i] = X[i, j]
-            end
-        end
-    end
-    return X
-end
 
 """
     cov2cor!(X)
@@ -70,14 +32,37 @@ function cov2cor!(X::AbstractMatrix)
         for i in 1:(j - 1)
             X[i, j] = adjoint(X[j, i])
         end
-        C[j, j] = oneunit(C[j, j])
+        X[j, j] = oneunit(X[j, j])
         for i in (j + 1):n
-            C[i, j] = clamp_cor(C[i, j] / (s[i] * sj))
+            X[i, j] = clamp_cor(X[i, j] / (s[i] * sj))
         end
     end
     return X
 end
 
+# Preserve structure of Symmetric covariance matrices
+function cov2cor!(X::Symmetric{<:Real})
+    s = map(sqrt, view(X, diagind(X)))
+    n = length(s)
+    size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
+    A = parent(X)
+    if X.uplo === 'U'
+        for j in 1:n
+            sj = s[j]
+            for i in 1:(j - 1)
+                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
+            end
+            A[j, j] = oneunit(A[j, j])
+        end
+    else
+        for j in 1:n
+            sj = s[j]
+            A[j, j] = oneunit(A[j, j])
+            for i in (j + 1):n
+                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
+            end
+        end
+    end
 # Preserve structure of Symmetric covariance matrices
 function cov2cor!(X::Symmetric{<:Real})
     s = map(sqrt, view(X, diagind(X)))
@@ -123,3 +108,48 @@ function eigen_sym(X::Symmetric{Float16})
 end
 
 eigen_sym(X, uplo = :U) = eigen_sym(Symmetric(X, uplo))
+
+"""
+    setdiag!(X, v)
+
+Set the diagonal elements of ``X`` to ``v``.
+"""
+function setdiag!(X::AbstractMatrix{T}, v::S) where {T, S}
+    require_square(X)
+    vt = convert(T, v)
+    @inbounds for i in diagind(X)
+        X[i] = vt
+    end
+    return X
+end
+
+"""
+    symmetrize!(X::AbstractMatrix, uplo::Symbol=:U)
+
+Symmetrize a square matrix `X` in-place by mirroring the upper (`:U`)
+or lower (`:L`) triangle to the opposite side.
+"""
+function symmetrize!(X::AbstractMatrix, uplo::Symbol = :U)
+    n = require_square(X)
+    if uplo === :U
+        @inbounds for j in 1:n
+            for i in (j + 1):n
+                X[i, j] = X[j, i]
+            end
+        end
+    elseif uplo === :L
+        @inbounds for j in 1:n
+            for i in 1:(j - 1)
+                X[i, j] = X[j, i]
+            end
+        end
+    else
+        throw(ArgumentError(lazy"uplo must be either :U or :L, got $uplo"))
+    end
+    return X
+end
+
+symmetrize!(X::Symmetric, ::Symbol) = symmetrize!(parent(X), X.uplo === 'U' ? :U : :L)
+symmetrize!(X::Symmetric) = symmetrize!(parent(X), X.uplo === 'U' ? :U : :L)
+symmetrize!(X::Diagonal, ::Symbol) = X
+symmetrize!(X::Diagonal) = X

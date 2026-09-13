@@ -1,80 +1,181 @@
 supported_types = (Float64, Float32, Float16)
 
-@testset "Internal Utilities" begin
-    @testset "Matrix Properties" begin
-        for T in supported_types
-            sqr_mat = 2 * rand(T, 10, 10) .- one(T)
-            rect_mat = 2 * rand(T, 10, 7) .- one(T)
-            @test issquare(sqr_mat) == true
-            @test issquare(rect_mat) == false
+@testset "Internal Utilities" verbose = true begin
+    @testset "clamp_cor" begin
+        # Assumptions:
+        # works for a wide range of numeric types
+        # values are constrained to ±1
+        # type is preserved after clamping
+        for T in (Int64, BigFloat, Float64, Float32, Float16, Rational{Int64})
+            x_gt_cor = T(2) * one(T)
+            x_lt_cor = T(-2) * one(T)
+            x_eq_ub = one(T)
+            x_eq_lb = -one(T)
+            x_valid_cor = zero(T)
 
-            x = T[one(T) T(0.3); T(0.3) one(T)]
-            y = T[nextfloat(one(T)) T(0.3); T(0.3) one(T)]
-            @test has_unit_diagonal(x) == true
-            @test has_unit_diagonal(y) == false
+            @test clamp_cor(x_gt_cor) == one(T)
+            @test clamp_cor(x_lt_cor) == -one(T)
+            @test clamp_cor(x_eq_ub) == x_eq_ub
+            @test clamp_cor(x_eq_lb) == x_eq_lb
+            @test clamp_cor(x_valid_cor) == x_valid_cor
 
-            r = default_negdef(T)
-            @test iscorrelation(r) == false
-            @test iscorrelation(sqr_mat) == false
-            @test iscorrelation(rect_mat) == false
+            @test typeof(clamp_cor(x_gt_cor)) === T
+            @test typeof(clamp_cor(x_lt_cor)) === T
+            @test typeof(clamp_cor(x_eq_ub)) === T
+            @test typeof(clamp_cor(x_eq_lb)) === T
+            @test typeof(clamp_cor(x_valid_cor)) === T
         end
     end
 
-    @testset "Out-of-place Methods" begin
-        for T in supported_types
-            # eigen_sym
-            # For Julia 1.10, eigen(Symmetric(X)) where eltype(X) == Float16 would return a
-            # decomposition with Float32 values. We define our own `eigen_sym` that respects
-            # the eltype of the input matrix, even though this is now fixed in Julia 1.12.
-            x = symmetrize!(2 * rand(T, 10, 10) .- one(T))
-            sym_mat = Symmetric(x)
+    @testset "cov2cor!" begin
+        # Assumptions:
+        # works on dense matrices and symmetric matrices
+        # works on eltypes of (Float16, Float32, Float64, BigFloat)
+        # result is symmetric
+        # non-diagonal elements are constrained to ±1
+        # diagonal elements are equal to 1 after the transformation
+        # for symmetric matrices, writes to the parent matrix
+        X = [
+            2.5 0.75 0.175
+            0.75 0.7 0.135
+            0.175 0.135 0.043
+        ]
 
-            λ, P = eigen_sym(x)
-            @test eltype(λ) === T
-            @test eltype(P) === T
+        for T in (Float16, Float32, Float64, BigFloat)
+            Y = convert(Matrix{T}, X)
+            cov2cor!(Y)
+            @test has_unit_diagonal(Y)
+            @test constrained_to_pm1(Y)
+            @test issymmetric(Y)
 
-            λ, P = eigen_sym(sym_mat)
-            @test eltype(λ) === T
-            @test eltype(P) === T
+            S = Symmetric(convert(Matrix{T}, X))
+            cov2cor!(S)
+            @test has_unit_diagonal(S)
+            @test constrained_to_pm1(S)
+            @test issymmetric(S)
         end
     end
 
-    @testset "In-place Methods" begin
-        for T in supported_types
-            # setdiag!
-            x = 2 * rand(T, 10, 10) .- one(T)
-            sym_mat = Symmetric(2 * rand(T, 10, 10) .- one(T))
-            rect_mat = 2 * rand(T, 10, 7) .- one(T)
+    @testset "eigen_sym" begin
+        # Assumptions:
+        # works on dense and symmetric matrices
+        # eltype of eigenvalues and eigenvectors matches the eltype of the input matrix
+        # works on eltypes of (Float16, Float32, Float64)
+        # eigenvalues are sorted in descending order
 
-            setdiag!(x, one(T))
-            @test all(==(one(T)), diag(x))
+        # If X is symmetric, then the spectral decomposition is guaranteed to return real values
 
-            setdiag!(sym_mat, one(T))
-            @test all(==(one(T)), diag(sym_mat))
+        # For Julia 1.10, eigen(Symmetric(X)) where eltype(X) == Float16 would return a
+        # decomposition with Float32 values. We define our own `eigen_sym` that respects
+        # the eltype of the input matrix, even though this is now fixed in Julia 1.12.
 
-            @test_throws Exception setdiag!(x, 3 // 4)
-            @test_throws Exception setdiag!(rect_mat, one(T))
+        X = [
+            2.5 0.75 0.175
+            0.75 0.7 0.135
+            0.175 0.135 0.043
+        ]
 
-            # symmetrize!
-            for uplo in (:U, :L)
-                x = 2 * rand(T, 10, 10) .- one(T)
-                symmetrize!(x, uplo)
-                @test issymmetric(x) == true
+        for T in (Float16, Float32, Float64)
+            Y = convert(Matrix{T}, X)
+            λ, P = eigen_sym(Y)
+            @test eltype(λ) === T
+            @test eltype(P) === T
+            @test issorted(λ; rev = true)
 
-                rect_mat = 2 * rand(T, 10, 7) .- one(T)
-                @test_throws Exception symmetrize!(rect_mat, uplo)
-            end
-
-            x = 2 * rand(T, 10, 10) .- one(T)
-            @test_throws ArgumentError symmetrize!(x, :u)
-
-            sym_mat = Symmetric(2 * rand(T, 10, 10) .- one(T))
-            symmetrize!(sym_mat)
-            @test sym_mat isa Symmetric
-
-            diag_mat = Diagonal(rand(T, 4))
-            symmetrize!(sym_mat)
-            @test diag_mat isa Diagonal
+            S = Symmetric(Y)
+            λ, P = eigen_sym(Y)
+            @test eltype(λ) === T
+            @test eltype(P) === T
+            @test issorted(λ; rev = true)
         end
+    end
+
+    @testset "setdiag!" begin
+        # Assumptions:
+        # works on square matrices
+        # works on dense, symmetric, and diagonal matrices
+        # rejects non-square matrices
+
+        v = 3.14
+        X = rand(Float64, 8, 8)
+        S = Symmetric(copy(X))
+        D = Diagonal(copy(X))
+        R = rand(Float64, 8, 5)
+
+        setdiag!(X, v)
+        @test all(==(v), diag(X))
+
+        setdiag!(S, v)
+        @test all(==(v), diag(S))
+
+        setdiag!(D, v)
+        @test all(==(v), diag(D))
+
+        @test_throws DimensionMismatch setdiag!(R, v)
+    end
+
+    @testset "symmetrize!" begin
+        # Assumptions:
+        # works on square matrices
+        # works on dense, symmetric, and diagonal matrices
+        # rejects non-square matrices
+        # rejects `uplo` not in (:U, :L)
+        # defaults to copying the upper view if `uplo` cannot be inferred
+
+        n = 8
+        X = rand(Float64, n, n)
+        S = Symmetric(copy(X))
+        D = Diagonal(copy(X))
+        R = rand(Float64, n, n - 1)
+
+        symmetrize!(X)
+        @test issymmetric(X)
+
+        symmetrize!(S)
+        @test issymmetric(S)
+        @test issymmetric(parent(S))
+
+        symmetrize!(D)
+        @test issymmetric(D)
+
+        @test_throws DimensionMismatch symmetrize!(R)
+
+        for uplo in (:u, :l, :upper, :lower, :Upper, :Lower, :a, :b)
+            @test_throws ArgumentError symmetrize!(X, uplo)
+        end
+
+        # Upper view
+        A = rand(Float64, n, n)
+        X = copy(A)
+        symmetrize!(X, :U)
+        @test triu(X)  == triu(A)
+        @test tril(X)' == triu(A)
+        @test triu(X)' != tril(A)
+        @test tril(X)  != tril(A)
+
+        S = Symmetric(copy(A), :U)
+        symmetrize!(S)
+        P = parent(S)
+        @test triu(P)  == triu(A)
+        @test tril(P)' == triu(A)
+        @test triu(P)' != tril(A)
+        @test tril(P)  != tril(A)
+
+        # Lower view
+        A = rand(Float64, n, n)
+        X = copy(A)
+        symmetrize!(X, :L)
+        @test triu(X)' == tril(A)
+        @test tril(X)  == tril(A)
+        @test triu(X)  != triu(A)
+        @test tril(X)' != triu(A)
+
+        S = Symmetric(copy(A), :L)
+        symmetrize!(S)
+        P = parent(S)
+        @test triu(P)' == tril(A)
+        @test tril(P)  == tril(A)
+        @test triu(P)  != triu(A)
+        @test tril(P)' != triu(A)
     end
 end

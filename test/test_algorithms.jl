@@ -1,5 +1,25 @@
+@testset "Constructors" verbose = true begin
+    prob = NCMProblem(rand(4, 4))
+
+    for algtype in internal_algtypes
+        @testset "$(NCM.alg_name(algtype))" begin
+            @test NCM.supports_parameterless_construction(algtype)
+
+            alg = NCM.construct_algorithm(algtype)
+            @test alg isa algtype
+
+            alg = autotune(algtype, prob)
+            @test alg isa algtype
+
+            # supports_parameterless_construction works on the type, not the instance
+            @test_throws MethodError NCM.supports_parameterless_construction(alg)
+        end
+    end
+end
+
+
 function test_simple(algtype)
-    return @testset "$algtype" begin
+    return @testset "$(NCM.alg_name(algtype))" begin
         r0 = default_negdef(Float64)
         prob = NCMProblem(r0)
         alg = autotune(algtype, prob)
@@ -30,25 +50,8 @@ function test_simple(algtype)
     end
 end
 
-@testset "Constructors" begin
-    prob = NCMProblem(rand(4, 4))
-
-    for algtype in (Newton, AlternatingProjections, DirectProjection)
-        @test NCM.supports_parameterless_construction(algtype) == true
-
-        alg = NCM.construct_algorithm(algtype)
-        @test alg isa algtype
-
-        alg = autotune(algtype, prob)
-        @test alg isa algtype
-
-        # supports_parameterless_construction works on the type, not the instance
-        @test_throws MethodError NCM.supports_parameterless_construction(alg)
+@testset "Convergence Tests" verbose = true begin
+    for algtype in internal_algtypes
+        test_simple(algtype)
     end
-end
-
-@testset verbose = true "Simple Tests" begin
-    test_simple(Newton)
-    test_simple(DirectProjection)
-    test_simple(AlternatingProjections)
 end

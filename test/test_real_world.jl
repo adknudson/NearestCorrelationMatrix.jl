@@ -46,7 +46,7 @@
         @test iscorrelation(A) == false
         B = nearest_cor(A, AlternatingProjections(); mask = m)
         @test_iscorrelation B
-        @test all(B[m] .== A[m])
+        @test B[m] == A[m]
     end
 
     @testset "HIGH02" begin
@@ -101,7 +101,7 @@
         @test iscorrelation(A) == false
         B = nearest_cor(A, AlternatingProjections(); mask = m)
         @test_iscorrelation B
-        @test all(B[m] .== A[m])
+        @test B[m] .== A[m]
     end
 
 end

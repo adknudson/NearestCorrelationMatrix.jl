@@ -18,6 +18,7 @@ Aqua = "0.8.16"
 COSMO = "0.8.4"
 CommonSolve = "0.2"
 DataDeps = "1.0.0"
+InteractiveUtils = "1.11.0"
 JuMP = "1.20"
 LinearAlgebra = "<0.0.1, 1"
 MAT = "0.12.1"
@@ -28,9 +29,10 @@ julia = "1.10"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
 DataDeps = "124859b0-ceae-595e-8997-d05f6a7a8dfe"
+InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "COSMO", "DataDeps", "JuMP", "MAT", "Test"]
+test = ["Aqua", "COSMO", "DataDeps", "InteractiveUtils", "JuMP", "MAT", "Test"]

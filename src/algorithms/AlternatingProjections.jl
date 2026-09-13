@@ -49,6 +49,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
     X = solver.cacheval.X
     R = solver.cacheval.R
     ΔS = solver.cacheval.S
+    fill!(ΔS, zero(eltype(ΔS)))
 
     iter = 0
     resid = Inf
@@ -57,6 +58,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwar
         R .= Y .- ΔS
         project_psd!(X, R, tau, scratch)
         ΔS .= X .- R
+        copyto!(Y, X)
 
         if mask !== nothing
             project_fixed!(Y, A_orig, mask)
