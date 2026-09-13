@@ -32,11 +32,18 @@ default_iters(::AlternatingProjections, A) = clamp(size(A, 1), 20, 200)
 modifies_in_place(::AlternatingProjections) = true
 supports_float16(::AlternatingProjections) = true
 supports_symmetric(::AlternatingProjections) = false
-supports_parameterless_construction(::Type{AlternatingProjections}) = true
-supports_mask(::AlternatingProjections) = true
+supports_parameterless_construction(::Type{<:AlternatingProjections}) = true
+supports_mask(::Type{<:AlternatingProjections}) = true
 
-function autotune(::Type{AlternatingProjections}, prob::NCMProblem)
-    return AlternatingProjections(; tau = eps(eltype(prob.A)))
+function autotune(::Type{<:AlternatingProjections}, prob::NCMProblem)
+    T = eltype(prob.A)
+    tau = eps(T)
+
+    if prob.mask !== nothing
+        tau = 15 * sqrt(tau)
+    end
+
+    return AlternatingProjections(; tau = tau)
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)

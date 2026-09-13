@@ -19,11 +19,19 @@ default_iters(::AcceleratedAP, A) = clamp(size(A, 1), 20, 200)
 modifies_in_place(::AcceleratedAP) = true
 supports_float16(::AcceleratedAP) = true
 supports_symmetric(::AcceleratedAP) = false
-supports_parameterless_construction(::Type{AcceleratedAP}) = true
-supports_mask(::AcceleratedAP) = true
+supports_parameterless_construction(::Type{<:AcceleratedAP}) = true
+supports_mask(::Type{<:AcceleratedAP}) = true
 
-function autotune(::Type{AcceleratedAP}, prob::NCMProblem)
-    return AcceleratedAP(; tau = eps(eltype(prob.A)), m = 2)
+function autotune(::Type{<:AcceleratedAP}, prob::NCMProblem)
+    T = eltype(prob.A)
+    tau = eps(T)
+
+    if prob.mask !== nothing
+        tau = 10 * sqrt(tau)
+    end
+
+    # if the problem implements masking, then err on the safe side for tau
+    return AcceleratedAP(; tau = tau, m = 2)
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AcceleratedAP; kwargs...)
@@ -130,7 +138,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AcceleratedAP; kwargs...)
     end
 
     if mask !== nothing
-        project_fixed!(Y, A_orig, mask)
+        project_fixed!(X, A_orig, mask)
     end
     project_unit!(X)
 

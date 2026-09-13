@@ -52,14 +52,15 @@ default_tol(::Type{<:Rational}) = 0
 default_tol(::Type{<:Integer}) = 0
 
 """
-    supports_mask(alg)
+    supports_mask(algtype)
 
 Trait for whether an algorithm supports a fixed-element mask. When `true`, the mask is enforced
 during the solve (for alternating projections, this means projecting onto the fixed-element
 subspace each iteration). When `false`, passing a mask throws an informative error. Default is
 `false`.
 """
-supports_mask(::NCMAlgorithm) = false
+supports_mask(::Type{T}) where {T<:NCMAlgorithm} = false
+supports_mask(alg::T) where {T<:NCMAlgorithm} = supports_mask(T)
 
 """
     default_iters(alg, A)
@@ -100,7 +101,7 @@ If `false`, then a copy using the upper or lower matrix is used instead.
 supports_symmetric(::NCMAlgorithm) = false
 
 """
-    supports_parameterless_construction(alg)
+    supports_parameterless_construction(algtype)
 
 Trait for if an algorithm can be constructed without any parameters (default is `false`).
 """
