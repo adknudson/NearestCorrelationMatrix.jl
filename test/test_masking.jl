@@ -2,10 +2,8 @@ using Test
 using LinearAlgebra
 using InteractiveUtils
 using NearestCorrelationMatrix
+using NearestCorrelationMatrix.Internals: default_negdef
 import NearestCorrelationMatrix as NCM
-
-include("Datasets.jl")
-using .Datasets
 
 include("CustomTestMacros.jl")
 using .CustomTestMacros
@@ -15,8 +13,7 @@ supported_types = (Float64, Float32, Float16)
 
 for algtype in masking_algs, T in supported_types
     @testset "$(NCM.alg_name(algtype)) - $T" begin
-        A, m = usgs13()
-        A = convert(Matrix{T}, A)
+        A, m = default_negdef(T; include_mask = true)
         X = copy(A)
         prob = NCMProblem(X; mask = m)
         alg = autotune(algtype, prob)

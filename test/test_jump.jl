@@ -1,15 +1,13 @@
 using Test
 using NearestCorrelationMatrix
+using NearestCorrelationMatrix.Internals: default_negdef
 using JuMP, COSMO
-
-include("Datasets.jl")
-using .Datasets
 
 include("CustomTestMacros.jl")
 using .CustomTestMacros
 
-r0 = default_negdef(Float64)
-prob = NCMProblem(r0)
+A = default_negdef()
+prob = NCMProblem(A)
 
 @test_isdefined JuMPAlgorithm
 @test_isimplemented JuMPAlgorithm(COSMO.Optimizer)

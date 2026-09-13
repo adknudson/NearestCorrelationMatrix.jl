@@ -1,20 +1,17 @@
-function rand_negdef(::Type{T}, n) where {T}
-    while true
-        r = 2 * rand(T, n, n) .- one(T)
-        symmetrize!(r)
-        r[diagind(r)] .= one(T)
+using Test
+using LinearAlgebra
+using NearestCorrelationMatrix
+using NearestCorrelationMatrix.Internals: rand_negdef
+using JuMP, COSMO
 
-        !isposdef(r) && return r
-    end
-    return
-end
-
+include("CustomTestMacros.jl")
+using .CustomTestMacros
 
 function test_robust_reps(algtype::Type, nreps, size, T, test_pd; kwargs...)
     return @testset "$(size)×$(size)" begin
         for _ in 1:nreps
-            r0 = rand_negdef(T, size)
-            prob = NCMProblem(r0)
+            A = rand_negdef(T, size)
+            prob = NCMProblem(A)
             alg = autotune(algtype, prob)
             cache = init(prob, alg; kwargs...)
             sol = solve!(cache)
@@ -31,8 +28,8 @@ end
 function test_robust_reps(alg::NCMAlgorithm, nreps, size, T, test_pd; kwargs...)
     return @testset "$(size)×$(size)" begin
         for _ in 1:nreps
-            r0 = rand_negdef(T, size)
-            prob = NCMProblem(r0)
+            A = rand_negdef(T, size)
+            prob = NCMProblem(A)
             cache = init(prob, alg; kwargs...)
             sol = solve!(cache)
 
