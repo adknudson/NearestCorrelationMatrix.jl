@@ -1,9 +1,7 @@
-using JuMP, COSMO
-
 function rand_negdef(::Type{T}, n) where {T}
     while true
         r = 2 * rand(T, n, n) .- one(T)
-        symmetric!(r)
+        symmetrize!(r)
         r[diagind(r)] .= one(T)
 
         !isposdef(r) && return r
@@ -102,11 +100,6 @@ end
     test_robust(algtype, Float32; cutoff = 250)
     test_robust(algtype, Float16; cutoff = 250, force_f16 = true)
 
-    algtype = AlternatingProjectionsAA
-    test_robust(algtype, Float64; cutoff = 250)
-    test_robust(algtype, Float32; cutoff = 250)
-    test_robust(algtype, Float16; cutoff = 250, force_f16 = true)
-
     alg = JuMPAlgorithm(
         optimizer_with_attributes(
             COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
@@ -127,11 +120,6 @@ end
     test_robust(algtype, Float16; cutoff = 1000, test_pd = true, force_f16 = true)
 
     algtype = AlternatingProjections
-    test_robust(algtype, Float64; cutoff = 250, test_pd = true, ensure_pd = true)
-    test_robust(algtype, Float32; cutoff = 250, test_pd = true, ensure_pd = true)
-    test_robust(algtype, Float16; cutoff = 250, test_pd = true, ensure_pd = true, force_f16 = true)
-
-    algtype = AlternatingProjectionsAA
     test_robust(algtype, Float64; cutoff = 250, test_pd = true, ensure_pd = true)
     test_robust(algtype, Float32; cutoff = 250, test_pd = true, ensure_pd = true)
     test_robust(algtype, Float16; cutoff = 250, test_pd = true, ensure_pd = true, force_f16 = true)

@@ -1,5 +1,4 @@
+using NearestCorrelationMatrix
 using Aqua
 
-@testset "Aqua" begin
-    Aqua.test_all(NearestCorrelationMatrix)
-end
+Aqua.test_all(NearestCorrelationMatrix)

@@ -1,30 +1,21 @@
-using Test, Aqua
-using LinearAlgebra
-using NearestCorrelationMatrix
-using NearestCorrelationMatrix.Internals
-import NearestCorrelationMatrix as NCM
+using SafeTestsets
 
-ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
-include("Datasets.jl")
-using .Datasets
-
-include("macros.jl")
+include("datadeps_registration.jl")
 
 # Package Quality
-@testset "Aqua" begin
-    Aqua.test_all(NearestCorrelationMatrix)
-end
+@safetestset "Quality Assurance" include("test_qa.jl")
 
 # Internals
-include("test_internals.jl")
+@safetestset "Internal Utilities" include("test_internals.jl")
 
 # API stability
-include("test_api.jl")
-include("test_simple_api.jl")
+@safetestset "Core API" include("test_api.jl")
+@safetestset "Simplified API" include("test_simple_api.jl")
 
 # Algorithm Robustnes
-include("test_algorithms.jl")
-include("test_real_world.jl")
+@safetestset "Constructors" include("test_constructors.jl")
+@safetestset "Convergence" include("test_convergence.jl")
+@safetestset "Real World Data" include("test_real_world.jl")
 
 # Extension Packages
-include("test_jump.jl")
+@safetestset "JuMP Extension" include("test_jump.jl")

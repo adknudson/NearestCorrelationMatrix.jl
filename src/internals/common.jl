@@ -1,159 +1,18 @@
-using LinearAlgebra
-
 export
-    clamp_pm1,
-    clamp_pm1!,
-    setdiag!,
-    sym_uplo,
-    symmetric!,
-    corconstrain!,
-    cov2cor,
+    clamp_cor,
     cov2cor!,
-    cor2cov,
-    cor2cov!,
     eigen_sym,
-    project_psd!,
-    project_psd
+    setdiag!,
+    symmetrize!
 
 
 """
-    clamp_pm1(x::Real)
+    clamp_cor(x::Real)
 
 Constrain a value between -1 and 1.
 """
-clamp_pm1(x::Real) = clamp(x, -one(x), one(x))
-
-"""
-    clamp_pm1!(A::AbstractArray)
-
-Contstrain all values of an array to be between -1 and 1.
-"""
-function clamp_pm1!(A::AbstractArray{T, N}) where {T, N}
-    @inbounds for i in eachindex(A)
-        A[i] = clamp_pm1(A[i])
-    end
-    return A
-end
-
-"""
-    setdiag!(X, v)
-
-Set the diagonal elements of ``X`` to ``v``.
-"""
-function setdiag!(X::AbstractMatrix{T}, v::T) where {T}
-    require_square(X)
-
-    for i in diagind(X)
-        @inbounds X[i] = v
-    end
-
-    return X
-end
-
-"""
-    sym_uplo(uplo::Char)
-
-Convert the `'U'` and `'L'` characters to their corresponding symbols (`:U` and `:L`).
-"""
-function sym_uplo(uplo::Char)
-    if uplo == 'U'
-        return :U
-    elseif uplo == 'L'
-        return :L
-    else
-        throw_uplo()
-    end
-end
-
-@noinline throw_uplo() =
-    throw(ArgumentError("uplo argument must be either :U (upper) or :L (lower)"))
-
-"""
-    symmetric!(X, uplo=:U)
-
-Make ``X`` symmetric in place by copying either the upper (`uplo=:U`) or lower (`uplo=:L`)
-triangle of ``X``.
-"""
-function symmetric!(X::AbstractMatrix, uplo::Symbol = :U)
-    if uplo === :U
-        _copytolower!(X)
-    elseif uplo === :L
-        _copytoupper!(X)
-    else
-        throw_uplo()
-    end
-
-    return X
-end
-
-symmetric!(X::Symmetric, ::Symbol = :U) = X
-symmetric!(X::Diagonal, ::Symbol = :U) = X
-
-function _copytolower!(X::AbstractMatrix)
-    require_square(X)
-
-    nr, nc = size(X)
-    for j in 1:(nc - 1)
-        for i in (j + 1):nr
-            @inbounds X[i, j] = X[j, i]
-        end
-    end
-    return X
-end
-
-function _copytoupper!(X::AbstractMatrix)
-    require_square(X)
-
-    nr, nc = size(X)
-    for j in 1:(nc - 1)
-        for i in (j + 1):nr
-            @inbounds X[j, i] = X[i, j]
-        end
-    end
-    return X
-end
-
-"""
-    corconstrain!(X, uplo=:U)
-
-Constrain ``X`` in place to be a pre-correlation.
-
-A pre-correlation matrix must:
-
-- be square
-- be symmetric
-- be constrained to ±1
-- have diagonals equal to 1
-"""
-function corconstrain!(X::AbstractMatrix{T}, uplo::Symbol = :U) where {T}
-    clamp_pm1!(X)
-    setdiag!(X, one(T))
-    symmetric!(X, uplo)
-    return X
-end
-
-function corconstrain!(X::Symmetric{T}, ::Symbol = :U) where {T}
-    clamp_pm1!(X.data)
-    setdiag!(X, one(T))
-    symmetric!(X.data, sym_uplo(X.uplo))
-    return X
-end
-
-function corconstrain!(X::Diagonal{T}, ::Symbol = :U) where {T}
-    fill!(X.diag, one(T))
-    return X
-end
-
-"""
-    cov2cor(X)
-
-Compute the correlation matrix from the covariance matrix. More generally this transforms
-the input matrix ``X`` into a correlation matrix without changing its positive-definiteness.
-"""
-function cov2cor(X::AbstractMatrix{T}) where {T}
-    D = sqrt(inv(Diagonal(X)))
-    return corconstrain!(D * X * D)
-end
+clamp_cor(x::Real) = clamp(x, -1, 1)
+clamp_cor(x) = x
 
 """
     cov2cor!(X)
@@ -162,42 +21,48 @@ Compute the correlation matrix from the covariance matrix ``X`` and overwrite it
 More generally this transforms the input matrix ``X`` into a correlation matrix without
 changing its positive-definiteness.
 """
-function cov2cor!(X::AbstractMatrix{T}) where {T}
-    D = sqrt(inv(Diagonal(X)))
-    lmul!(D, X)
-    rmul!(X, D)
-    setdiag!(X, one(T))
-    symmetric!(X)
-    return X
-end
-
-function cov2cor!(X::Symmetric{T}) where {T}
-    symmetric!(X.data, sym_uplo(X.uplo))
-    cov2cor!(X.data)
-    return X
-end
-
-"""
-    cor2cov(C, s)
-"""
-cor2cov(C::AbstractMatrix{T}, s::AbstractVector{T}) where {T} = cor2cov!(copy(C), s)
-
-"""
-    cor2cov!(C, s)
-
-Compute the covariance matrix from the correlation matrix ``C`` and a vector of variances ``s``.
-"""
-function cor2cov!(C::AbstractMatrix{T}, s::AbstractVector{T}) where {T}
-    for i in CartesianIndices(size(C))
-        @inbounds C[i] *= s[i[1]] * s[i[2]]
+function cov2cor!(X::AbstractMatrix)
+    Base.require_one_based_indexing(X)
+    s = map(sqrt, view(X, diagind(X)))
+    n = length(s)
+    size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
+    for j in 1:n
+        sj = s[j]
+        for i in 1:(j - 1)
+            X[i, j] = adjoint(X[j, i])
+        end
+        X[j, j] = oneunit(X[j, j])
+        for i in (j + 1):n
+            X[i, j] = clamp_cor(X[i, j] / (s[i] * sj))
+        end
     end
-    return C
+    return X
 end
 
-function cor2cov!(C::Symmetric{T}, s::AbstractVector{T}) where {T}
-    symmetric!(C.data)
-    cor2cov!(C.data, s)
-    return C
+# Preserve structure of Symmetric covariance matrices
+function cov2cor!(X::Symmetric{<:Real})
+    s = map(sqrt, view(X, diagind(X)))
+    n = length(s)
+    size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
+    A = parent(X)
+    if X.uplo === 'U'
+        for j in 1:n
+            sj = s[j]
+            for i in 1:(j - 1)
+                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
+            end
+            A[j, j] = oneunit(A[j, j])
+        end
+    else
+        for j in 1:n
+            sj = s[j]
+            A[j, j] = oneunit(A[j, j])
+            for i in (j + 1):n
+                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
+            end
+        end
+    end
+    return X
 end
 
 """
@@ -221,35 +86,46 @@ end
 eigen_sym(X, uplo = :U) = eigen_sym(Symmetric(X, uplo))
 
 """
-    project_psd!(X, ϵ)
+    setdiag!(X, v)
 
-Project ``X`` onto the cone of positive semi-definite matrices. This method works by
-computing the eigen decomposition of ``X`` and replacing eigenvalues below a threshold with
-the threshold value, and then reconstructing the matrix.
+Set the diagonal elements of ``X`` to ``v``.
 """
-function project_psd!(X::AbstractMatrix{T}, ϵ::T = zero(T)) where {T}
-    ϵ = max(ϵ, zero(T))
-    λ, P = eigen_sym(X)
-    replace!(x -> max(x, ϵ), λ)
-    X .= P * Diagonal(λ) * P'
-    return X
-end
-
-function project_psd!(X::Symmetric{T}, ϵ::T = zero(T)) where {T}
-    ϵ = max(ϵ, zero(T))
-    λ, P = eigen_sym(X)
-    replace!(x -> max(x, ϵ), λ)
-    X.data .= P * Diagonal(λ) * P'
+function setdiag!(X::AbstractMatrix{T}, v::S) where {T, S}
+    require_square(X)
+    vt = convert(T, v)
+    @inbounds for i in diagind(X)
+        X[i] = vt
+    end
     return X
 end
 
 """
-    project_psd(X, ϵ)
+    symmetrize!(X::AbstractMatrix, uplo::Symbol=:U)
 
-Project ``X`` onto the cone of positive semi-definite matrices. This method works by
-computing the eigen decomposition of ``X`` and replacing eigenvalues below a threshold with
-the threshold value, and then reconstructing the matrix.
+Symmetrize a square matrix `X` in-place by mirroring the upper (`:U`)
+or lower (`:L`) triangle to the opposite side.
 """
-function project_psd(X::AbstractMatrix{T}, ϵ::T = zero(T)) where {T}
-    return project_psd!(copy(X), ϵ)
+function symmetrize!(X::AbstractMatrix, uplo::Symbol = :U)
+    n = require_square(X)
+    if uplo === :U
+        @inbounds for j in 1:n
+            for i in (j + 1):n
+                X[i, j] = X[j, i]
+            end
+        end
+    elseif uplo === :L
+        @inbounds for j in 1:n
+            for i in 1:(j - 1)
+                X[i, j] = X[j, i]
+            end
+        end
+    else
+        throw(ArgumentError(lazy"uplo must be either :U or :L, got $uplo"))
+    end
+    return X
 end
+
+symmetrize!(X::Symmetric, ::Symbol) = symmetrize!(parent(X), X.uplo === 'U' ? :U : :L)
+symmetrize!(X::Symmetric) = symmetrize!(parent(X), X.uplo === 'U' ? :U : :L)
+symmetrize!(X::Diagonal, ::Symbol) = X
+symmetrize!(X::Diagonal) = X

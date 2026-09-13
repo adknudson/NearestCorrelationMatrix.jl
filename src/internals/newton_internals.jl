@@ -1,7 +1,9 @@
-using LinearAlgebra, Tullio
-
-export dual_gradient!,
-    primal_feasible_solution!, omega_matrix, precondition_matrix!, preconditioned_cg!
+export
+    dual_gradient!,
+    primal_feasible_solution!,
+    omega_matrix,
+    precondition_matrix!,
+    preconditioned_cg!
 
 """
     dual_gradient(∇fy, y, λ, P, b)
@@ -21,8 +23,8 @@ and
 """
 function dual_gradient!(∇fy, y, λ, P, b)
     r = count(>(0), λ)
-    Pr = @view P[:, begin:r]
-    λr = @view λ[begin:r]
+    Pr = @view P[:, 1:r]
+    λr = @view λ[1:r]
 
     fy = dot(λr, λr) / 2 - dot(b, y)
     ∇fy .= diag(Pr * Diagonal(λr) * Pr')
@@ -52,13 +54,13 @@ function primal_feasible_solution!(X, λ, P, b)
         λ1 = λ[1]
         mul!(X, P1, P1', λ1, 0)
     elseif r ≤ s
-        Pr = @view P[:, begin:r]
-        λr = sqrt(Diagonal(λ[begin:r]))
+        Pr = @view P[:, 1:r]
+        λr = sqrt(Diagonal(λ[1:r]))
         Q = Pr * λr
         mul!(X, Q, Q')
     elseif r < n
-        Ps = @view P[:, (r + 1):end]
-        λs = sqrt(Diagonal(-λ[(r + 1):end]))
+        Ps = @view P[:, (r + 1):n]
+        λs = sqrt(Diagonal(-λ[(r + 1):n]))
         Q = Ps * λs
         mul!(X, Q, Q', 1, 1)
     end
@@ -67,8 +69,7 @@ function primal_feasible_solution!(X, λ, P, b)
     d = max.(diag(X), b)
     X[diagind(X)] .= d
     d .= sqrt.(b ./ d)
-    d2 = d * d'
-    X .*= d2
+    X .= d .* X .* d'
 
     return X
 end
@@ -91,12 +92,10 @@ function omega_matrix(λ)
     r == 0 && return zeros(eltype(λ), 0, 0)
     r == n && return ones(eltype(λ), n, n)
 
-    λr = @view λ[begin:r]
-    λs = @view λ[(r + 1):end]
+    λr = @view λ[1:r]
+    λs = @view λ[(r + 1):n]
 
-    @tullio W[i, j] := λr[i] / (λr[i] - λs[j])
-
-    return W
+    return λr ./ (λr .- λs')
 end
 
 """
@@ -106,12 +105,13 @@ Construct the full `n × n` Ω matrix from the upper right block ``W``.
 """
 function full_omega_matrix!(Ω, W)
     T = eltype(Ω)
+    n = size(Ω, 1)
     r = size(W, 1)
 
-    fill!(@view(Ω[begin:r, begin:r]), one(T))
-    fill!(@view(Ω[(r + 1):end, (r + 1):end]), zero(T))
-    @view(Ω[begin:r, (r + 1):end]) .= W
-    @view(Ω[(r + 1):end, begin:r]) .= W'
+    fill!(@view(Ω[1:r, 1:r]), one(T))
+    fill!(@view(Ω[(r + 1):n, (r + 1):n]), zero(T))
+    @view(Ω[1:r, (r + 1):n]) .= W
+    @view(Ω[(r + 1):n, 1:r]) .= W'
 
     return Ω
 end
@@ -152,8 +152,8 @@ function jacobian_matrix!(Vd, d, W, P)
         return Vd
     end
 
-    Pr = @view P[:, begin:r]
-    Ps = @view P[:, (r + 1):end]
+    Pr = @view P[:, 1:r]
+    Ps = @view P[:, (r + 1):n]
 
     Wrs = W .* (Pr' * Diagonal(d) * Ps)
     PW = Pr * Wrs
@@ -195,7 +195,9 @@ function precondition_matrix!(v, W, P, Ω)
     Q = P .* P
     M = Ω * Q
 
-    @tullio v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
+    for i in eachindex(v)
+        v[i] = dot(@view(Q[:, i]), @view(M[:, i]))
+    end
 
     ϵ = sqrt(eps(T))
     replace!(x -> max(x, ϵ), v)

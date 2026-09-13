@@ -1,6 +1,5 @@
-using LinearAlgebra: diag, eigmin
-
-export issquare,
+export
+    issquare,
     require_square,
     require_matrix,
     require_real,
@@ -16,33 +15,39 @@ export issquare,
 Test whether a value is a square matrix.
 """
 issquare(::Any) = false
-issquare(X::AbstractMatrix) = ==(size(X)...)
+function issquare(X::AbstractMatrix)
+    m, n = size(X)
+    return m == n
+end
 
 """
     require_square(X)
 
-Require that a matrix is square. Throw an error if it is not.
+Require that a matrix is square, then return its common dimension.
 """
-require_square(X) = issquare(X) || throw_square()
-@noinline throw_square() = throw(DimensionMismatch("Matrix required to be square"))
+function require_square(X)
+    m, n = size(X)
+    m == n || throw(DimensionMismatch(lazy"matrix is not square: dimensions are $(size(X))"))
+    return m
+end
 
 """
     require_matrix(X)
 
 Require that an input be an `AbstractMatrix`. Throw an error if it is not.
 """
-require_matrix(::Any) = throw_matrix()
-require_matrix(::AbstractMatrix) = nothing
-@noinline throw_matrix() = throw(ArgumentError("Input required to be an `AbstractMatrix`"))
+require_matrix(@nospecialize X) = X isa AbstractMatrix ||
+    throw(ArgumentError(lazy"Input required to be an AbstractMatrix, got $(typeof(X))"))
 
 """
     require_real(X)
 
 Require that a matrix has real-valued elements. Throw an error if it does not.
 """
-require_real(::AbstractMatrix{T}) where {T} = throw_real(T)
-require_real(::AbstractMatrix{<:Real}) = nothing
-@noinline throw_real(T) = throw(DomainError(T, "Matrix required to have real values"))
+function require_real(::AbstractMatrix{T}) where {T}
+    T <: Real || throw(ArgumentError(lazy"Matrix element type must be Real, got $T"))
+    return nothing
+end
 
 """
     has_unit_diagonal(X)

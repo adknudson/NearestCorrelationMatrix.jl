@@ -10,8 +10,8 @@ abstract type NCMAlgorithm end
 
 Get the simple name for the NCM algorithm type.
 """
-alg_name(::Type{T}) where {T <: NCMAlgorithm} = (isempty(T.parameters) ? T : T.name.wrapper)
-alg_name(alg::NCMAlgorithm) = alg_name(typeof(alg))
+alg_name(::Type{T}) where {T <: NCMAlgorithm} = nameof(T)
+alg_name(alg::NCMAlgorithm) = nameof(typeof(alg))
 
 """
     autotune(algtype, prob)
@@ -36,9 +36,9 @@ julia> alg = autotune(Newton, prob);
 autotune(algtype::Type{<:NCMAlgorithm}, ::NCMProblem) = construct_algorithm(algtype)
 
 """
-    init_cacheval(alg, args...)
+    init_cacheval(alg, A; kwargs...)
 """
-init_cacheval(::NCMAlgorithm, args...) = nothing
+init_cacheval(::NCMAlgorithm, ::Any; kwargs...) = nothing
 
 """
     default_tol(::Type)
@@ -50,6 +50,16 @@ default_tol(::Type{T}) where {T} = sqrt(eps(T))
 default_tol(::Type{Complex{T}}) where {T} = sqrt(eps(T))
 default_tol(::Type{<:Rational}) = 0
 default_tol(::Type{<:Integer}) = 0
+
+"""
+    supports_mask(alg)
+
+Trait for whether an algorithm supports a fixed-element mask. When `true`, the mask is enforced
+during the solve (for alternating projections, this means projecting onto the fixed-element
+subspace each iteration). When `false`, passing a mask throws an informative error. Default is
+`false`.
+"""
+supports_mask(::NCMAlgorithm) = false
 
 """
     default_iters(alg, A)
@@ -99,7 +109,7 @@ supports_parameterless_construction(::Type{<:NCMAlgorithm}) = false
 """
     construct_algorithm(algtype)
 
-Construct the algorithm without ant parameters. Throws an error if the algtype does not
+Construct the algorithm without any parameters. Throws an error if the algtype does not
 support parameterless construction.
 """
 function construct_algorithm(algtype::Type{<:NCMAlgorithm})

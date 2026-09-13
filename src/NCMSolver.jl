@@ -15,8 +15,10 @@ Common interface for solving NCM problems. Algorithm-specific cache is stored in
 - `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
   Defaults to `false`.
 - `verbose`: Whether to print extra information. Defaults to `false`.
+- `mask`: The fixed-element mask, or `nothing` if unmasked.
+- `A_orig`: The original values of A to be used when a mask is supplied.
 """
-mutable struct NCMSolver{TA, P, Talg, Tc, Ttol}
+mutable struct NCMSolver{TA, P, Talg, Tc, Ttol, Tm}
     A::TA           # the input matrix
     p::P            # parameters
     alg::Talg       # ncm algorithm
@@ -26,7 +28,9 @@ mutable struct NCMSolver{TA, P, Talg, Tc, Ttol}
     reltol::Ttol    # relative tolerance for convergence
     maxiters::Int   # maximum number of iterations
     ensure_pd::Bool # ensures that the resulting matrix is positive definite
-    verbose::Bool
+    verbose::Bool   # whether to print extra information
+    mask::Tm        # fixed-element mask, or nothing
+    A_orig::TA      # a copy of A, or an alias of A if no mask is given
 end
 
 """
@@ -34,7 +38,7 @@ end
 
 Get the default algorithm type for a given input matrix.
 """
-default_algtype(::NCMProblem) = Newton
+default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AlternatingProjections
 
 """
     init(prob, alg, args...; kwargs...)
@@ -46,6 +50,10 @@ Initialize the solver with the given algorithm.
 - `alias_A`: Whether to alias the matrix ``A`` or use a copy by default. When `true`,
   algorithms that operate in place can save memory by reusing ``A``. Defaults to `true` if
   the algorithm is known not to modify ``A``, and `false` otherwise.
+- `mask`: An optional fixed-element mask. For every upper-triangular position ``(i, j)`` with
+  ``i < j`` where ``mask[i, j]`` is truthy, the solution must retain the value ``A[i, j]``. The
+  mask is normalized and symmetrized. Requires an algorithm that supports `supports_mask`.
+  Defaults to `nothing` (no elements held fixed).
 - `abstol`: The absolute tolerance. Defaults to `√(eps(eltype(A)))`.
 - `reltol`: The relative tolerance. Defaults to `√(eps(eltype(A)))`.
 - `maxiters`: The number of iterations allowed. Defaults to `size(A,1)`
@@ -66,6 +74,7 @@ function CommonSolve.init(
         prob::NCMProblem,
         alg::NCMAlgorithm,
         args...;
+        mask = nothing,
         alias_A = default_alias_A(alg, prob.A),
         abstol = default_tol(real(eltype(prob.A))),
         reltol = default_tol(real(eltype(prob.A))),
@@ -78,7 +87,31 @@ function CommonSolve.init(
         verbose::Bool = false,
         kwargs...
     )
-    @unpack A, p = prob
+    # Resolve the effective mask first: an explicit `mask=` kwarg overrides any mask set on the
+    # problem; otherwise fall back to the problem's (already-normalized) mask, then to nothing.
+    mask = if mask !== nothing
+        verbose && println("Using fixed-element mask")
+        normalize_mask(mask)
+    elseif prob.mask !== nothing
+        verbose && println("Using fixed-element mask from the problem")
+        prob.mask
+    else
+        nothing
+    end
+
+    # A non-empty effective mask must be enforced by an algorithm that supports it. Check the
+    # *effective* mask (not just the kwarg) so a mask set on the problem is not silently ignored
+    # by an unsupported algorithm.
+    if mask !== nothing && !supports_mask(alg)
+        error(
+            "$(alg_name(alg)) does not support a fixed-element mask. Use an algorithm that " *
+                "implements `supports_mask` (e.g. AlternatingProjections), or clear the mask " *
+                "by passing `mask=nothing`."
+        )
+    end
+
+    A = prob.A
+    p = prob.p
 
     A = if alias_A
         verbose && println("Aliasing A")
@@ -92,7 +125,7 @@ function CommonSolve.init(
                 "$(alg_name(alg)) does not support Symmetric types. " *
                     "Creating a symmetric copy of A.data"
             )
-            symmetric!(copy(A.data), sym_uplo(A.uplo))
+            Matrix(A)
         end
     elseif A isa Matrix
         verbose && println("Creating a copy of A")
@@ -116,7 +149,7 @@ function CommonSolve.init(
                     "Input matrix is not symmetric. Copying the " *
                         "$(uplo == :U ? "upper" : "lower") part of the matrix"
                 )
-                symmetric!(A, uplo)
+                symmetrize!(A, uplo)
             end
         else
             error(
@@ -149,16 +182,21 @@ function CommonSolve.init(
         end
     end
 
+    # Capture the original (transformed) input as the value source for fixed elements. With
+    # alias_A=true the algorithms overwrite A in place, so the values must be saved here at
+    # init time. Only allocated for masked problems.
+    A_orig = mask === nothing ? A : copy(A)
+
     # Guard against type mismatch for user-specified reltol/abstol
     reltol = real(eltype(A))(reltol)
     abstol = real(eltype(A))(abstol)
 
-    cacheval = init_cacheval(alg, A, maxiters, abstol, reltol, verbose)
+    cacheval = init_cacheval(alg, A; maxiters = maxiters, abstol = abstol, reltol = reltol, verbose = verbose)
     isfresh = true
     Tc = typeof(cacheval)
 
-    solver = NCMSolver{typeof(A), typeof(p), typeof(alg), Tc, typeof(reltol)}(
-        A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, ensure_pd, verbose
+    solver = NCMSolver{typeof(A), typeof(p), typeof(alg), Tc, typeof(reltol), Union{Nothing, typeof(mask)}}(
+        A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, ensure_pd, verbose, mask, A_orig
     )
 
     return solver
@@ -185,7 +223,7 @@ function CommonSolve.init(prob::NCMProblem, args...; kwargs...)
 end
 
 """
-    init(prob, nothing, args...; kwargs...)
+    init(prob, algtype::Nothing, args...; kwargs...)
 
 Initialize the solver with the default algorithm autotuned to the problem.
 """

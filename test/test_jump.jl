@@ -1,18 +1,24 @@
+using Test
+using NearestCorrelationMatrix
 using JuMP, COSMO
 
-@testset "JuMP Extension" begin
-    r0 = default_negdef(Float64)
-    prob = NCMProblem(r0)
+include("Datasets.jl")
+using .Datasets
 
-    @test_isdefined JuMPAlgorithm
-    @test_isimplemented JuMPAlgorithm(COSMO.Optimizer)
+include("CustomTestMacros.jl")
+using .CustomTestMacros
 
-    @test_throws Exception autotune(JuMPAlgorithm, prob)
+r0 = default_negdef(Float64)
+prob = NCMProblem(r0)
 
-    optimizer = optimizer_with_attributes(
-        COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
-    )
-    alg = JuMPAlgorithm(optimizer)
+@test_isdefined JuMPAlgorithm
+@test_isimplemented JuMPAlgorithm(COSMO.Optimizer)
 
-    @test_nothrow solve(prob, alg)
-end
+@test_throws Exception autotune(JuMPAlgorithm, prob)
+
+optimizer = optimizer_with_attributes(
+    COSMO.Optimizer, MOI.Silent() => true, "rho" => 1.0
+)
+alg = JuMPAlgorithm(optimizer)
+
+@test_nothrow solve(prob, alg)
