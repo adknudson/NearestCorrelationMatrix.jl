@@ -1,6 +1,6 @@
 using SafeTestsets
 
-ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
+include("datadeps_registration.jl")
 
 # Package Quality
 @safetestset "Quality Assurance" include("test_qa.jl")
