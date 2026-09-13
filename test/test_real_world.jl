@@ -14,8 +14,6 @@ internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
 fast_algtypes = (Newton, DirectProjection)
 
 for alg in internal_algtypes
-    @info "Working on $alg"
-
     @testset "$(NCM.alg_name(alg))" begin
         @testset "BEYU11" begin
             A = beyu11()
