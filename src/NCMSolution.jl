@@ -83,7 +83,7 @@ function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
     sol = solve!(solver, solver.alg, args...; kwargs...)
 
     if sol.solver.ensure_pd && !isposdef(sol.X)
-        project_psd!(sol.X, sqrt(eps(eltype(sol.X))))
+        project_psd!(sol.X, solver.min_eigenvalue)
 
         # Strict PD and exact fixed-element feasibility cannot both be guaranteed: repairing
         # definiteness perturbs every entry, so re-apply the mask afterwards. The fixed elements

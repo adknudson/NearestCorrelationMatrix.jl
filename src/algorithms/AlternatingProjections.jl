@@ -36,15 +36,7 @@ supports_parameterless_construction(::Type{<:AlternatingProjections}) = true
 supports_mask(::Type{<:AlternatingProjections}) = true
 
 function autotune(::Type{<:AlternatingProjections}, prob::NCMProblem)
-    T = eltype(prob.A)
-    tau = sqrt(eps(T))
-
-    # if the problem implements masking, then err on the safe side for tau
-    if prob.mask !== nothing
-        tau = 20 * tau
-    end
-
-    return AlternatingProjections(; tau = tau)
+    return AlternatingProjections(; tau = sqrt(eps(eltype(prob.A))))
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjections; kwargs...)

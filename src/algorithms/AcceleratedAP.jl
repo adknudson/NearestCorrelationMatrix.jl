@@ -23,15 +23,7 @@ supports_parameterless_construction(::Type{<:AcceleratedAP}) = true
 supports_mask(::Type{<:AcceleratedAP}) = true
 
 function autotune(::Type{<:AcceleratedAP}, prob::NCMProblem)
-    T = eltype(prob.A)
-    tau = sqrt(eps(T))
-
-    # if the problem implements masking, then err on the safe side for tau
-    if prob.mask !== nothing
-        tau = 20 * tau
-    end
-
-    return AcceleratedAP(; tau = tau, m = 2)
+    return AcceleratedAP(; tau = sqrt(eps(eltype(prob.A))), m = 2)
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::AcceleratedAP; kwargs...)
