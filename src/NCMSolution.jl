@@ -89,7 +89,7 @@ function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
         project_psd!(sol.X, sqrt(eps(eltype(sol.X))))
 
         if sol.solver.mask !== nothing
-            project_f!(sol.X, sol.solver.A_orig, sol.solver.mask)
+            project_fixed!(sol.X, sol.solver.A_orig, sol.solver.mask)
         end
 
         project_unit!(sol.X)
