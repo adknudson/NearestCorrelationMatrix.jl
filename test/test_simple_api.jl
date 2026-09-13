@@ -1,33 +1,41 @@
-@testset "Simple API" begin
-    @test_isdefined nearest_cor
-    @test_isdefined nearest_cor!
+using Test
+using LinearAlgebra
+using NearestCorrelationMatrix
 
-    r = default_negdef(Float64)
+include("Datasets.jl")
+using .Datasets
 
-    @test_isimplemented nearest_cor(r)
-    @test_isimplemented nearest_cor(r, Newton())
-    @test_isimplemented nearest_cor(r, Newton)
+include("CustomTestMacros.jl")
+using .CustomTestMacros
 
-    @test nearest_cor(r) isa AbstractMatrix
+@test_isdefined nearest_cor
+@test_isdefined nearest_cor!
 
-    @test_isimplemented nearest_cor!(r)
-    @test_isimplemented nearest_cor!(r, Newton())
-    @test_isimplemented nearest_cor!(r, Newton)
+r = default_negdef(Float64)
 
-    @test nearest_cor!(r) isa AbstractMatrix
+@test_isimplemented nearest_cor(r)
+@test_isimplemented nearest_cor(r, Newton())
+@test_isimplemented nearest_cor(r, Newton)
 
-    # not symmetric input
-    r = rand(4, 4)
-    @test_nothrow nearest_cor(r)
-    @test_nothrow nearest_cor!(r)
+@test nearest_cor(r) isa AbstractMatrix
 
-    # Symmetric type input
-    r = Symmetric(rand(4, 4))
-    @test_nothrow nearest_cor(r)
-    @test_nothrow nearest_cor!(r)
+@test_isimplemented nearest_cor!(r)
+@test_isimplemented nearest_cor!(r, Newton())
+@test_isimplemented nearest_cor!(r, Newton)
 
-    # Float16 input
-    r = rand(Float16, 4, 4)
-    @test_nothrow nearest_cor(r)
-    @test_nothrow nearest_cor!(r)
-end
+@test nearest_cor!(r) isa AbstractMatrix
+
+# not symmetric input
+r = rand(4, 4)
+@test_nothrow nearest_cor(r)
+@test_nothrow nearest_cor!(r)
+
+# Symmetric type input
+r = Symmetric(rand(4, 4))
+@test_nothrow nearest_cor(r)
+@test_nothrow nearest_cor!(r)
+
+# Float16 input
+r = rand(Float16, 4, 4)
+@test_nothrow nearest_cor(r)
+@test_nothrow nearest_cor!(r)

@@ -1,22 +1,16 @@
-@testset "Constructors" verbose = true begin
-    prob = NCMProblem(rand(4, 4))
+using Test
+using InteractiveUtils
+using LinearAlgebra
+using NearestCorrelationMatrix
+import NearestCorrelationMatrix as NCM
 
-    for algtype in internal_algtypes
-        @testset "$(NCM.alg_name(algtype))" begin
-            @test NCM.supports_parameterless_construction(algtype)
+include("Datasets.jl")
+using .Datasets
 
-            alg = NCM.construct_algorithm(algtype)
-            @test alg isa algtype
+include("CustomTestMacros.jl")
+using .CustomTestMacros
 
-            alg = autotune(algtype, prob)
-            @test alg isa algtype
-
-            # supports_parameterless_construction works on the type, not the instance
-            @test_throws MethodError NCM.supports_parameterless_construction(alg)
-        end
-    end
-end
-
+internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
 
 function test_simple(algtype)
     return @testset "$(NCM.alg_name(algtype))" begin
@@ -50,8 +44,6 @@ function test_simple(algtype)
     end
 end
 
-@testset "Convergence Tests" verbose = true begin
-    for algtype in internal_algtypes
-        test_simple(algtype)
-    end
+for algtype in internal_algtypes
+    test_simple(algtype)
 end

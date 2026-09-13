@@ -1,5 +1,3 @@
-using JuMP, COSMO
-
 function rand_negdef(::Type{T}, n) where {T}
     while true
         r = 2 * rand(T, n, n) .- one(T)
