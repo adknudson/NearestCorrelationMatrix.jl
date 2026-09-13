@@ -8,7 +8,6 @@ export
 
 """
     clamp_cor(x::Real)
-    clamp_cor(x::Real)
 
 Constrain a value between -1 and 1.
 """
@@ -40,29 +39,6 @@ function cov2cor!(X::AbstractMatrix)
     return X
 end
 
-# Preserve structure of Symmetric covariance matrices
-function cov2cor!(X::Symmetric{<:Real})
-    s = map(sqrt, view(X, diagind(X)))
-    n = length(s)
-    size(X) == (n, n) || throw(DimensionMismatch("inconsistent dimensions"))
-    A = parent(X)
-    if X.uplo === 'U'
-        for j in 1:n
-            sj = s[j]
-            for i in 1:(j - 1)
-                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
-            end
-            A[j, j] = oneunit(A[j, j])
-        end
-    else
-        for j in 1:n
-            sj = s[j]
-            A[j, j] = oneunit(A[j, j])
-            for i in (j + 1):n
-                A[i, j] = clamp_cor(A[i, j] / (s[i] * sj))
-            end
-        end
-    end
 # Preserve structure of Symmetric covariance matrices
 function cov2cor!(X::Symmetric{<:Real})
     s = map(sqrt, view(X, diagind(X)))
