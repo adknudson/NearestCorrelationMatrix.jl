@@ -14,6 +14,7 @@ Common interface for solving NCM problems. Algorithm-specific cache is stored in
 - `maxiters`: The number of iterations allowed. Defaults to `size(A,1)`
 - `ensure_pd`: Checks (and corrects) that the resulting matrix is positive definite.
   Defaults to `false`.
+- `min_eigenvalue`: The minimum eigenvalue to enforce when `ensure_pd` == true.
 - `verbose`: Whether to print extra information. Defaults to `false`.
 - `mask`: The fixed-element mask, or `nothing` if unmasked.
 - `A_orig`: The original values of A to be used when a mask is supplied.
@@ -28,6 +29,7 @@ mutable struct NCMSolver{TA, P, Talg, Tc, Ttol, Tm}
     reltol::Ttol    # relative tolerance for convergence
     maxiters::Int   # maximum number of iterations
     ensure_pd::Bool # ensures that the resulting matrix is positive definite
+    min_eigenvalue::Union{Nothing, Real} # the minimum eigenvalue to enforce
     verbose::Bool   # whether to print extra information
     mask::Tm        # fixed-element mask, or nothing
     A_orig::TA      # a copy of A, or an alias of A if no mask is given
@@ -38,7 +40,7 @@ end
 
 Get the default algorithm type for a given input matrix.
 """
-default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AlternatingProjections
+default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AcceleratedAP
 
 """
     init(prob, alg, args...; kwargs...)
@@ -84,6 +86,7 @@ function CommonSolve.init(
         convert_f16::Bool = false,
         force_f16::Bool = false,
         ensure_pd::Bool = false,
+        min_eigenvalue = nothing,
         verbose::Bool = false,
         kwargs...
     )
@@ -112,6 +115,8 @@ function CommonSolve.init(
 
     A = prob.A
     p = prob.p
+
+    T = eltype(A)
 
     A = if alias_A
         verbose && println("Aliasing A")
@@ -159,7 +164,7 @@ function CommonSolve.init(
         end
     end
 
-    if eltype(A) === Float16 && !supports_float16(alg)
+    if T === Float16 && !supports_float16(alg)
         if convert_f16
             verbose &&
                 println(
@@ -188,15 +193,35 @@ function CommonSolve.init(
     A_orig = mask === nothing ? A : copy(A)
 
     # Guard against type mismatch for user-specified reltol/abstol
-    reltol = real(eltype(A))(reltol)
-    abstol = real(eltype(A))(abstol)
+    reltol = real(T)(reltol)
+    reltol = max(reltol, sqrt(eps(T)))
+    abstol = real(T)(abstol)
+    abstol = max(abstol, eps(T))
+
+    min_eigenvalue = if min_eigenvalue === nothing
+        if ensure_pd
+            if mask === nothing
+                # no mask, can default to sqrt(eps(T))
+                sqrt(eps(T))
+            else
+                # be more conservative about the min eigenvalue when there is a mask
+                sqrt(sqrt(eps(T)))
+            end
+        else
+            # no checks for PD -> min_eigenvalue is not used
+            nothing
+        end
+    else
+        # user explicitly set min_eigenvalue. Just ensure that it is Real
+        real(T)(min_eigenvalue)
+    end
 
     cacheval = init_cacheval(alg, A; maxiters = maxiters, abstol = abstol, reltol = reltol, verbose = verbose)
     isfresh = true
     Tc = typeof(cacheval)
 
     solver = NCMSolver{typeof(A), typeof(p), typeof(alg), Tc, typeof(reltol), Union{Nothing, typeof(mask)}}(
-        A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, ensure_pd, verbose, mask, A_orig
+        A, p, alg, cacheval, isfresh, abstol, reltol, maxiters, ensure_pd, min_eigenvalue, verbose, mask, A_orig
     )
 
     return solver

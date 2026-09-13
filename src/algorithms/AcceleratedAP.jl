@@ -1,33 +1,40 @@
-struct AlternatingProjectionsAA{A, K} <: NCMAlgorithm
+"""
+    AcceleratedAP(; tau=0, m=2)
+
+The alternating projections algorithm with Anderson acceleration applied. Should converge
+in roughly half the number of steps of the standard alternating projections algorithm.
+"""
+struct AcceleratedAP{A, K} <: NCMAlgorithm
     tau::Real
     m::Int
     args::A
     kwargs::K
 end
 
-function AlternatingProjectionsAA(args...; tau::Real = 0, m::Int = 2, kwargs...)
-    return AlternatingProjectionsAA(tau, m, args, kwargs)
+function AcceleratedAP(args...; tau::Real = 0, m::Int = 2, kwargs...)
+    return AcceleratedAP(tau, m, args, kwargs)
 end
 
-default_iters(::AlternatingProjectionsAA, A) = clamp(size(A, 1), 20, 200)
-modifies_in_place(::AlternatingProjectionsAA) = true
-supports_float16(::AlternatingProjectionsAA) = true
-supports_symmetric(::AlternatingProjectionsAA) = false
-supports_parameterless_construction(::Type{AlternatingProjectionsAA}) = true
+default_iters(::AcceleratedAP, A) = clamp(size(A, 1), 20, 200)
+modifies_in_place(::AcceleratedAP) = true
+supports_float16(::AcceleratedAP) = true
+supports_symmetric(::AcceleratedAP) = false
+supports_parameterless_construction(::Type{<:AcceleratedAP}) = true
+supports_mask(::Type{<:AcceleratedAP}) = true
 
-function autotune(::Type{AlternatingProjectionsAA}, prob::NCMProblem)
-    return AlternatingProjectionsAA(; tau = eps(eltype(prob.A)), m = 2)
+function autotune(::Type{<:AcceleratedAP}, prob::NCMProblem)
+    return AcceleratedAP(; tau = sqrt(eps(eltype(prob.A))), m = 2)
 end
 
-function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjectionsAA; kwargs...)
+function CommonSolve.solve!(solver::NCMSolver, alg::AcceleratedAP; kwargs...)
     A = solver.A
     n = size(A, 1)
-    size(A, 2) == n || throw(DimensionMismatch("Input matrix A must be square."))
 
     T = eltype(A)
     m = alg.m
-    tol = solver.reltol
-    maxiter = solver.maxiters
+    tau = convert(T, alg.tau)
+    mask = solver.mask
+    A_orig = solver.A_orig
 
     # Initialize working matrices
     X = copy(A)
@@ -35,6 +42,7 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjectionsAA; kw
     S = zeros(T, n, n)
     R = similar(A)
     G = similar(A)
+    scratch = similar(A)
 
     # Pre-allocate memory for Anderson Acceleration history
     vec_dim = n * n
@@ -47,36 +55,26 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjectionsAA; kw
     m_eff = 0
 
     iter = 0
-    converged = false
-    rel_err = 0.0
+    resid = Inf
 
-    while iter < maxiter
+    while iter < solver.maxiters
         iter += 1
 
-        # R = Y - S
-        @. R = Y - S
-
-        # X = P_S(R) : Project onto Positive Semidefinite Cone S+
-        X .= project_s(R)
-
-        # S = X - R : Update Dykstra correction
-        @. S = X - R
-
-        # G = P_U(X) : Project onto Unit Diagonal U
+        R .= Y .- S
+        project_psd!(X, R, tau, scratch)
+        S .= X .- R
         copyto!(G, X)
-        for i in 1:n
-            G[i, i] = one(T)
+
+        if mask !== nothing
+            project_fixed!(G, A_orig, mask)
         end
 
-        # Relative residual error check
-        rel_err = norm(X .- G, 2) / max(one(T), norm(X, 2))
+        # project unit after projecting fixed to ensure that the unit diagonal is preserved
+        project_unit!(G)
 
-        if solver.verbose
-            println("Iter $iter: rel_err = $rel_err")
-        end
+        resid = norm(X .- G) / norm(X)
 
-        if rel_err <= tol
-            converged = true
+        if resid <= solver.reltol
             break
         end
 
@@ -131,11 +129,10 @@ function CommonSolve.solve!(solver::NCMSolver, alg::AlternatingProjectionsAA; kw
         end
     end
 
-    # Ensure output X strictly satisfies unit diagonal and exact symmetry
-    for i in 1:n
-        X[i, i] = one(T)
+    if mask !== nothing
+        project_fixed!(X, A_orig, mask)
     end
-    X .= (X .+ X') ./ 2
+    project_unit!(X)
 
-    return build_ncm_solution(alg, X, rel_err, solver; iters = iter)
+    return build_ncm_solution(alg, X, resid, solver; iters = iter)
 end

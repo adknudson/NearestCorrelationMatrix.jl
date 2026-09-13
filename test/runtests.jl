@@ -15,6 +15,7 @@ include("datadeps_registration.jl")
 # Algorithm Robustnes
 @safetestset "Constructors" include("test_constructors.jl")
 @safetestset "Convergence" include("test_convergence.jl")
+@safetestset "Fixed Element Masking" include("test_masking.jl")
 @safetestset "Real World Data" include("test_real_world.jl")
 
 # Extension Packages
