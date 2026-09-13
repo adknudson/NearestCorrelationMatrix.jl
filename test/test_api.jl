@@ -1,4 +1,5 @@
 using Test
+using LinearAlgebra
 using InteractiveUtils
 using NearestCorrelationMatrix
 using NearestCorrelationMatrix.Internals: default_negdef
