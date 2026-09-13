@@ -36,30 +36,6 @@ struct NCMProblem{T, M, P, K}
         require_matrix(A)
         require_square(A)
         require_real(A)
-
-        mask = normalize_mask(mask)
-
         return new{typeof(A), typeof(mask), typeof(p), typeof(kwargs)}(A, mask, p, kwargs)
     end
 end
-
-
-normalize_mask(::Nothing) = nothing
-
-function normalize_mask(B::BitMatrix)
-    n = require_square(B)
-
-    for i in 1:(n - 1), j in (i + 1):n
-        b = B[i, j] || B[j, i]
-        B[i, j] = b
-        B[j, i] = b
-    end
-
-    for ii in diagind(B)
-        B[ii] = false
-    end
-
-    return B
-end
-
-normalize_mask(B::AbstractMatrix{T}) where {T} = normalize_mask(BitMatrix(B))

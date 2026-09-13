@@ -89,7 +89,7 @@ function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
         # definiteness perturbs every entry, so re-apply the mask afterwards. The fixed elements
         # (and unit diagonal) take precedence - the result is PD up to O(√eps).
         if sol.solver.mask !== nothing
-            project_fixed!(sol.X, sol.solver.A_orig, sol.solver.mask)
+            project_fixed!(sol.X, solver.A_orig, solver.mask)
             project_unit!(sol.X)
         else
             cov2cor!(sol.X)
