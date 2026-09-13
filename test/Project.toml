@@ -16,8 +16,8 @@ NearestCorrelationMatrix = {path = ".."}
 [compat]
 Aqua = "0.8.16"
 COSMO = "0.8.11"
-DataDeps = "1.0.0"
-InteractiveUtils = "1.11.0"
+DataDeps = "1"
+InteractiveUtils = "1"
 JuMP = "1.31.2"
 LinearAlgebra = "1"
 MAT = "0.12.1"
