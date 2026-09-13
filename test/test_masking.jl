@@ -1,4 +1,5 @@
 using Test
+using LinearAlgebra
 using InteractiveUtils
 using NearestCorrelationMatrix
 import NearestCorrelationMatrix as NCM
