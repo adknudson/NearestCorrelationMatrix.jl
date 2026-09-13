@@ -1,9 +1,7 @@
 using Test
 using LinearAlgebra
 using NearestCorrelationMatrix
-
-include("Datasets.jl")
-using .Datasets
+using NearestCorrelationMatrix.Internals: default_negdef
 
 include("CustomTestMacros.jl")
 using .CustomTestMacros
@@ -11,31 +9,36 @@ using .CustomTestMacros
 @test_isdefined nearest_cor
 @test_isdefined nearest_cor!
 
-r = default_negdef(Float64)
+A = default_negdef()
 
-@test_isimplemented nearest_cor(r)
-@test_isimplemented nearest_cor(r, Newton())
-@test_isimplemented nearest_cor(r, Newton)
+@test_isimplemented nearest_cor(A)
+@test_isimplemented nearest_cor(A, Newton())
+@test_isimplemented nearest_cor(A, Newton)
 
 @test nearest_cor(r) isa AbstractMatrix
 
-@test_isimplemented nearest_cor!(r)
-@test_isimplemented nearest_cor!(r, Newton())
-@test_isimplemented nearest_cor!(r, Newton)
+@test_isimplemented nearest_cor!(A)
+@test_isimplemented nearest_cor!(A, Newton())
+@test_isimplemented nearest_cor!(A, Newton)
 
-@test nearest_cor!(r) isa AbstractMatrix
+@test nearest_cor!(A) isa AbstractMatrix
 
 # not symmetric input
-r = rand(4, 4)
-@test_nothrow nearest_cor(r)
-@test_nothrow nearest_cor!(r)
+A = rand(4, 4)
+@test_nothrow nearest_cor(A)
+@test_nothrow nearest_cor!(A)
 
 # Symmetric type input
-r = Symmetric(rand(4, 4))
-@test_nothrow nearest_cor(r)
-@test_nothrow nearest_cor!(r)
+A = Symmetric(rand(4, 4))
+@test_nothrow nearest_cor(A)
+@test_nothrow nearest_cor!(A)
 
 # Float16 input
-r = rand(Float16, 4, 4)
-@test_nothrow nearest_cor(r)
-@test_nothrow nearest_cor!(r)
+A = rand(Float16, 4, 4)
+@test_nothrow nearest_cor(A)
+@test_nothrow nearest_cor!(A)
+
+# (#41) uses an algorithm that supports masking when a mask is given
+A, m = default_negdef(; include_mask = true)
+@test_nothrow nearest_cor(A; mask = m)
+@test_nothrow nearest_cor!(A; mask = m)

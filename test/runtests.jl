@@ -1,5 +1,6 @@
 using SafeTestsets
 
+# Register data deps once before all other tests
 include("datadeps_registration.jl")
 
 # Package Quality

@@ -1,11 +1,11 @@
 export default_negdef, rand_negdef
 
 """
-    default_negdef([T=Float64])
+    default_negdef([T=Float64]; include_mask=false)
 
 Returns a 4×4 invalid correlation matrix and an optional mask.
 """
-function default_negdef(::Type{T}) where {T <: AbstractFloat}
+function default_negdef(::Type{T}; include_mask::Bool = false) where {T <: AbstractFloat}
     # !WARNING! The data in this generator must never be edited to ensure consistency with
     # future releases.
 
@@ -26,10 +26,10 @@ function default_negdef(::Type{T}) where {T <: AbstractFloat}
     X = convert(AbstractMatrix{T}, A)
     m = convert(BitMatrix, mask)
 
-    return X, m
+    return include_mask ? (X, m) : X
 end
 
-default_negdef() = default_negdef(Float64)
+default_negdef(; include_mask::Bool = false) = default_negdef(Float64; include_mask)
 
 """
     rand_negdef([T=Float64], n; max_attempts=100)

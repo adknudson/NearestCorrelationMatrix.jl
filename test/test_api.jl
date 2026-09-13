@@ -1,21 +1,19 @@
 using Test
 using InteractiveUtils
 using NearestCorrelationMatrix
-
-include("Datasets.jl")
-using .Datasets
+using NearestCorrelationMatrix.Internals: default_negdef
 
 include("CustomTestMacros.jl")
 using .CustomTestMacros
 
 internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
 
-r0 = default_negdef(Float64)
+A = default_negdef()
 
 # variants of NCMProblem
 @test_isdefined NCMProblem
-@test_isimplemented NCMProblem(r0)
-prob = NCMProblem(r0)
+@test_isimplemented NCMProblem(A)
+prob = NCMProblem(A)
 
 # variations of init
 @test_isdefined init
