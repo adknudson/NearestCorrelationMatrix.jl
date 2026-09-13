@@ -40,5 +40,15 @@ A = rand(Float16, 4, 4)
 
 # (#41) uses an algorithm that supports masking when a mask is given
 A, m = default_negdef(; include_mask = true)
-@test_broken nearest_cor(A; mask = m)
-@test_broken nearest_cor!(A; mask = m)
+@test_nothrow nearest_cor(A; mask = m)
+@test_nothrow nearest_cor!(A; mask = m)
+
+# nearest_cor must not modify original matrix UNLESS user passes `alias_A=true`
+A = default_negdef()
+Y = nearest_cor(A, AlternatingProjections)
+@test Base.mightalias(Y, A) == false
+@test !isapprox(Y, A)
+A = default_negdef()
+Y = nearest_cor(A, AlternatingProjections; alias_A = true)
+@test Base.mightalias(Y, A) == true
+@test isapprox(Y, A)

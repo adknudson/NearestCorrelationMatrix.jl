@@ -36,13 +36,6 @@ mutable struct NCMSolver{TA, P, Talg, Tc, Ttol, Tm}
 end
 
 """
-    default_algtype(prob)
-
-Get the default algorithm type for a given input matrix.
-"""
-default_algtype(prob::NCMProblem) = prob.mask === nothing ? Newton : AcceleratedAP
-
-"""
     init(prob, alg, args...; kwargs...)
 
 Initialize the solver with the given algorithm.
@@ -94,16 +87,19 @@ function CommonSolve.init(
         kwargs...
     )
     # Resolve the effective mask first: an explicit `mask=` kwarg overrides any mask set on the
-    # problem; otherwise fall back to the problem's (already-normalized) mask, then to nothing.
+    # problem; otherwise fall back to the problem's mask, then finally default to nothing.
     mask = if mask !== nothing
         verbose && println("Using fixed-element mask")
-        normalize_mask(mask)
+        mask
     elseif prob.mask !== nothing
         verbose && println("Using fixed-element mask from the problem")
         prob.mask
     else
         nothing
     end
+
+    # Ensure that the mask is normalized to a BitMatrix or Nothing
+    mask = normalize_mask(mask)
 
     # A non-empty effective mask must be enforced by an algorithm that supports it. Check the
     # *effective* mask (not just the kwarg) so a mask set on the problem is not silently ignored
@@ -235,10 +231,9 @@ end
 
 Initialize the solver, and autotune the algorithm to the problem.
 """
-function CommonSolve.init(
-        prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
-    )
-    return init(prob, autotune(algtype, prob), args...; kwargs...)
+function CommonSolve.init(prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...)
+    alg = autotune(algtype, prob)
+    return init(prob, alg, args...; kwargs...)
 end
 
 """
@@ -256,5 +251,50 @@ end
 Initialize the solver with the default algorithm autotuned to the problem.
 """
 function CommonSolve.init(prob::NCMProblem, ::Nothing, args...; kwargs...)
-    return init(prob, default_algtype(prob), args...; kwargs...)
+    algtype = default_algtype(prob; kwargs...)
+    return init(prob, algtype, args...; kwargs...)
 end
+
+"""
+    default_algtype(prob; kwargs...)
+
+Get the default algorithm type for a given input matrix.
+"""
+function default_algtype(prob::NCMProblem; mask = nothing, kwargs...)
+    mask = if mask !== nothing
+        mask
+    elseif prob.mask !== nothing
+        prob.mask
+    else
+        nothing
+    end
+
+    return mask === nothing ? Newton : AcceleratedAP
+end
+
+"""
+    normalize_mask(mask)
+
+Normalizes a mask by converting it to a BitMatrix, or leaves as `nothing`. If a matrix is
+given, the resulting BitMatrix is forced to be symmetric. If A[i,j] or A[j,i] is true, then
+the resulting BitMatrix will have a true value in both positions. The diagonal elements are
+always set to false, since the algorithm should handle setting the diagonal elements to 1.
+"""
+function normalize_mask(B::BitMatrix)
+    n = require_square(B)
+
+    for i in 1:(n - 1), j in (i + 1):n
+        b = B[i, j] || B[j, i]
+        B[i, j] = b
+        B[j, i] = b
+    end
+
+    for ii in diagind(B)
+        B[ii] = false
+    end
+
+    return B
+end
+
+normalize_mask(B::AbstractMatrix{T}) where {T} = normalize_mask(BitMatrix(B))
+normalize_mask(::Nothing) = nothing

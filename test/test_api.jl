@@ -1,4 +1,5 @@
 using Test
+using LinearAlgebra
 using InteractiveUtils
 using NearestCorrelationMatrix
 using NearestCorrelationMatrix.Internals: default_negdef
@@ -46,3 +47,19 @@ cache = init(prob)
 @test_isdefined solve!
 @test_isimplemented solve!(cache)
 @test solve!(cache) isa NCMSolution
+
+# alias_A must be respected
+A = default_negdef()
+prob = NCMProblem(A)
+@test Base.mightalias(A, prob.A)
+solver = init(prob; alias_A = true)
+@test Base.mightalias(prob.A, solver.A)
+solver = init(prob; alias_A = false)
+@test !Base.mightalias(prob.A, solver.A)
+S = Symmetric(A)
+prob = NCMProblem(S)
+@test Base.mightalias(S, prob.A)
+solver = init(prob; alias_A = true)
+@test Base.mightalias(prob.A, solver.A)
+solver = init(prob; alias_A = false)
+@test !Base.mightalias(prob.A, solver.A)
