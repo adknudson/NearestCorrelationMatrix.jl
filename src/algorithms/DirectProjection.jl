@@ -1,5 +1,5 @@
 """
-    DirectProjection(; tau=eps())
+    DirectProjection(args...; tau=0, kwargs...)
 
 Single step projection of the input matrix into the set of correlation matrices. Useful when
 a "close" correlation matrix is needed without concern for it being the most optimal.
@@ -11,10 +11,10 @@ struct DirectProjection{A, K} <: NCMAlgorithm
     tau::Real
     args::A
     kwargs::K
-end
 
-function DirectProjection(args...; tau::Real = 0, kwargs...)
-    return DirectProjection(tau, args, kwargs)
+    function DirectProjection(args...; tau::Real = 0, kwargs...)
+        return DirectProjection(tau, args, kwargs)
+    end
 end
 
 modifies_in_place(::DirectProjection) = true
@@ -24,7 +24,7 @@ supports_parameterless_construction(::Type{DirectProjection}) = true
 
 autotune(::Type{DirectProjection}, prob::NCMProblem) = _autotune(DirectProjection, prob.A)
 
-function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float64})
+function _autotune(::Type{DirectProjection}, ::AbstractMatrix{Float64})
     return DirectProjection(; tau = 1.0e-12)
 end
 
@@ -61,12 +61,14 @@ function _autotune(::Type{DirectProjection}, A::AbstractMatrix{Float16})
 end
 
 function CommonSolve.solve!(solver::NCMSolver, alg::DirectProjection; kwargs...)
-    X = solver.A
-    T = eltype(X)
-    tau = max(T(alg.tau), zero(T))
+    A = solver.A
+    X = copy(A)
+    tau = convert(eltype(X), alg.tau)
 
     project_psd!(X, tau)
     cov2cor!(X)
 
-    return build_ncm_solution(alg, X, nothing, solver; iters = 1)
+    resid = norm(X .- A) / norm(X)
+
+    return build_ncm_solution(alg, X, resid, solver; iters = 1)
 end
