@@ -1,5 +1,7 @@
 using SafeTestsets
 
+const GROUP = get(ENV, "GROUP", "Local")
+
 include("datadeps_registration.jl")
 
 # Package Quality
@@ -16,7 +18,10 @@ include("datadeps_registration.jl")
 @safetestset "Constructors" include("test_constructors.jl")
 @safetestset "Convergence" include("test_convergence.jl")
 @safetestset "Fixed Element Masking" include("test_masking.jl")
-@safetestset "Real World Data" include("test_real_world.jl")
+
+if GROUP in ("All", "Local")
+    @safetestset "Real World Data" include("test_real_world.jl")
+end
 
 # Extension Packages
 @safetestset "JuMP Extension" include("test_jump.jl")
