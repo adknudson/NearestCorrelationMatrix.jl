@@ -107,7 +107,7 @@ end
 
     A, m = usgs13()
     @test !iscorrelation(A)
-    B = nearest_cor(A, AlternatingProjections(tau=1.0e-6); mask = m)
+    B = nearest_cor(A, AlternatingProjections(tau = 1.0e-6); mask = m)
     @test_iscorrelation B
     @test B[m] == A[m]
 end
