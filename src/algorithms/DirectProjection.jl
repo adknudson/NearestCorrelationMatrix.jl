@@ -12,9 +12,10 @@ struct DirectProjection{A, K} <: NCMAlgorithm
     args::A
     kwargs::K
 
-    function DirectProjection(args...; tau::Real = 0, kwargs...)
-        return DirectProjection(tau, args, kwargs)
-    end
+end
+
+function DirectProjection(args...; tau::Real = 0, kwargs...)
+    return DirectProjection(tau, args, kwargs)
 end
 
 modifies_in_place(::DirectProjection) = true
