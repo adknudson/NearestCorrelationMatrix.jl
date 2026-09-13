@@ -8,7 +8,7 @@ Random.seed!(0x00c0ffee)
 const SUITE = BenchmarkGroup()
 
 function create_benchmarkable(n, alg; evals, samples, seconds)
-    return @benchmarkable nearest_cor(A, alg) evals = evals samples = samples seconds = seconds setup = (A = rand_negdef(n))
+    return @benchmarkable nearest_cor(A, $alg) evals = evals samples = samples seconds = seconds setup = (A = rand_negdef($n))
 end
 
 function create_benchmark_group(n::Int; evals = 5, samples = 100, seconds = 60)
