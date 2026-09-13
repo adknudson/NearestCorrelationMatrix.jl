@@ -28,7 +28,7 @@ function autotune(::Type{<:AcceleratedAP}, prob::NCMProblem)
 
     # if the problem implements masking, then err on the safe side for tau
     if prob.mask !== nothing
-        tau = 15 * tau
+        tau = 20 * tau
     end
 
     return AcceleratedAP(; tau = tau, m = 2)

@@ -41,7 +41,7 @@ function autotune(::Type{<:AlternatingProjections}, prob::NCMProblem)
 
     # if the problem implements masking, then err on the safe side for tau
     if prob.mask !== nothing
-        tau = 15 * tau
+        tau = 20 * tau
     end
 
     return AlternatingProjections(; tau = tau)
