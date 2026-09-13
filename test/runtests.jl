@@ -1,6 +1,6 @@
 using SafeTestsets
 
-const GROUP = get(ENV, "GROUP", "Local")
+const GROUP = get(ENV, "GROUP", nothing)
 
 include("datadeps_registration.jl")
 

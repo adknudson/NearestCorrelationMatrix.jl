@@ -48,18 +48,35 @@ cache = init(prob)
 @test_isimplemented solve!(cache)
 @test solve!(cache) isa NCMSolution
 
-# alias_A must be respected
+# ==> alias_A ==>
+alg = AlternatingProjections # AP is known to modify in place
 A = default_negdef()
 prob = NCMProblem(A)
-@test Base.mightalias(A, prob.A)
-solver = init(prob; alias_A = true)
-@test Base.mightalias(prob.A, solver.A)
-solver = init(prob; alias_A = false)
-@test !Base.mightalias(prob.A, solver.A)
+
+# when not aliased, A and sol.X must be different
+sol = solve(prob, alg; alias_A = false)
+@test !isapprox(sol.X, A)
+
+# when aliased, A and sol.X might be same (true for AP)
+sol = solve(prob, alg; alias_A = true)
+@test isapprox(sol.X, A)
+
+# test with Symmetric input
+A = default_negdef()
 S = Symmetric(A)
 prob = NCMProblem(S)
-@test Base.mightalias(S, prob.A)
-solver = init(prob; alias_A = true)
-@test Base.mightalias(prob.A, solver.A)
+
+# when not aliased, A and sol.X must be different
 solver = init(prob; alias_A = false)
-@test !Base.mightalias(prob.A, solver.A)
+@test solver.A !== S
+sol = solve!(solver)
+@test !isapprox(sol.X, A)
+@test !isapprox(sol.X, S)
+
+# when aliased, A and sol.X might be same (true for AP)
+solver = init(prob; alias_A = true)
+@test solver.A === S
+sol = solve!(solver)
+@test_broken isapprox(sol.X, A)
+@test_broken isapprox(sol.X, S)
+# <== end alias_A <==
