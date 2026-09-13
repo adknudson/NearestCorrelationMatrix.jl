@@ -59,8 +59,8 @@ during the solve (for alternating projections, this means projecting onto the fi
 subspace each iteration). When `false`, passing a mask throws an informative error. Default is
 `false`.
 """
-supports_mask(::Type{T}) where {T<:NCMAlgorithm} = false
-supports_mask(alg::T) where {T<:NCMAlgorithm} = supports_mask(T)
+supports_mask(::Type{T}) where {T <: NCMAlgorithm} = false
+supports_mask(alg::T) where {T <: NCMAlgorithm} = supports_mask(T)
 
 """
     default_iters(alg, A)
