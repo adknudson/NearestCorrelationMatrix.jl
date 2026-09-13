@@ -1,6 +1,6 @@
 using Test
-using NearestCorrelationMatrix
 using InteractiveUtils
+using NearestCorrelationMatrix
 
 include("Datasets.jl")
 using .Datasets
