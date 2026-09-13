@@ -37,10 +37,11 @@ supports_mask(::Type{<:AlternatingProjections}) = true
 
 function autotune(::Type{<:AlternatingProjections}, prob::NCMProblem)
     T = eltype(prob.A)
-    tau = eps(T)
+    tau = sqrt(eps(T))
 
+    # if the problem implements masking, then err on the safe side for tau
     if prob.mask !== nothing
-        tau = 15 * sqrt(tau)
+        tau = 15 * tau
     end
 
     return AlternatingProjections(; tau = tau)

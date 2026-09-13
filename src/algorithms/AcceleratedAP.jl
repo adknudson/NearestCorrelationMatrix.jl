@@ -24,13 +24,13 @@ supports_mask(::Type{<:AcceleratedAP}) = true
 
 function autotune(::Type{<:AcceleratedAP}, prob::NCMProblem)
     T = eltype(prob.A)
-    tau = eps(T)
-
-    if prob.mask !== nothing
-        tau = 10 * sqrt(tau)
-    end
+    tau = sqrt(eps(T))
 
     # if the problem implements masking, then err on the safe side for tau
+    if prob.mask !== nothing
+        tau = 15 * tau
+    end
+
     return AcceleratedAP(; tau = tau, m = 2)
 end
 

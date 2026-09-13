@@ -33,7 +33,23 @@ function Newton(
 end
 
 autotune(::Type{Newton}, prob::NCMProblem) = _autotune(Newton, prob.A)
-_autotune(::Type{Newton}, A::AbstractMatrix{Float64}) = Newton(; tau = 1.0e-12)
+function _autotune(::Type{Newton}, A::AbstractMatrix{Float64})
+    n = size(A, 1)
+
+    tau = if n ≤ 50
+        1.0e-12
+    elseif n ≤ 100
+        1.0e-11
+    elseif n ≤ 500
+        1.0e-10
+    elseif n ≤ 1000
+        1.0e-8
+    else
+        1.0e-6
+    end
+
+    return Newton(; tau = tau)
+end
 
 function _autotune(::Type{Newton}, A::AbstractMatrix{Float32})
     n = size(A, 1)
