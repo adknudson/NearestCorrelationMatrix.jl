@@ -1,11 +1,21 @@
 using BenchmarkTools
 using Random, LinearAlgebra
 using NearestCorrelationMatrix
-using NearestCorrelationMatrix.Internals: rand_negdef
+using NearestCorrelationMatrix.Internals: symmetrize!
 
 Random.seed!(0x00c0ffee)
 
 const SUITE = BenchmarkGroup()
+
+function rand_negdef(n::Int)
+    while true
+        A = 2.0 * rand(Float64, n, n) .- 1.0
+        symmetrize!(A)
+        A[diagind(A)] .= 1.0
+        !isposdef(A) && return A
+    end
+    return zeros(Float64, 0, 0)
+end
 
 function create_benchmarkable(n, alg; evals, samples, seconds)
     return @benchmarkable nearest_cor(A, $alg) evals = evals samples = samples seconds = seconds setup = (A = rand_negdef($n))
