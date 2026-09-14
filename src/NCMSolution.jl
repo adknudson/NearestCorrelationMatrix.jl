@@ -1,9 +1,9 @@
 """
-    NCMSolution(x, resid, alg, iters, solver, stats)
+    NCMSolution(X, resid, alg, iters, solver, stats)
 
 Representation of the solution to an NCM problem defined by a `NCMProblem`
 
-## Fields
+# Fields
 
 - `X`: The solution to the NCM problem.
 - `resid`: The residual of the solver.
@@ -34,65 +34,54 @@ function build_ncm_solution(alg, X, resid, solver; iters = 0, stats = nothing)
 end
 
 """
-    solve(prob, alg, args...; kwargs...)
-
-Solve the NCM problem with the given algorithm.
-"""
-function CommonSolve.solve(prob::NCMProblem, alg::NCMAlgorithm, args...; kwargs...)
-    return solve!(init(prob, alg, args...; kwargs...))
-end
-
-"""
-    solve(prob, algtype, args...; kwargs...)
-
-Solve the NCM problem with the given algorithm type.
-The algorithm will be autotuned to the problem.
-"""
-function CommonSolve.solve(
-        prob::NCMProblem, algtype::Type{<:NCMAlgorithm}, args...; kwargs...
-    )
-    return solve!(init(prob, algtype, args...; kwargs...))
-end
-
-"""
-    solve(prob, args...; kwargs...)
-
-Solve the NCM problem with the default algorithm.
-The algorithm will be autotuned to the problem.
-"""
-function CommonSolve.solve(prob::NCMProblem, args...; kwargs...)
-    return solve(prob, nothing, args...; kwargs...)
-end
-
-"""
-    solve(prob, nothing, args...; kwargs...)
-
-Solve the NCM problem with the default algorithm.
-The algorithm will be autotuned to the problem.
-"""
-function CommonSolve.solve(prob::NCMProblem, ::Nothing, args...; kwargs...)
-    return solve!(init(prob, nothing, args...; kwargs...))
-end
-
-"""
     solve!(solver, args...; kwargs...)
 
 Solve the initialized NCM problem.
 """
 function CommonSolve.solve!(solver::NCMSolver, args...; kwargs...)
-    sol = solve!(solver, solver.alg, args...; kwargs...)
+    verbose = solver.verbose
 
-    if sol.solver.ensure_pd && !isposdef(sol.X)
-        project_psd!(sol.X, solver.min_eigenvalue)
+    verbose && println("Beginning solve...")
 
-        # Strict PD and exact fixed-element feasibility cannot both be guaranteed: repairing
-        # definiteness perturbs every entry, so re-apply the mask afterwards. The fixed elements
-        # (and unit diagonal) take precedence - the result is PD up to O(√eps).
-        if sol.solver.mask !== nothing
-            project_fixed!(sol.X, solver.A_orig, solver.mask)
-            project_unit!(sol.X)
-        else
-            cov2cor!(sol.X)
+    # solve! must dispatch on both the solver and the algorithm
+    sol = solve!(solver, solver.alg; kwargs...)
+
+    verbose && println("Finished solving...")
+
+    if solver.ensure_pd
+        verbose && println("Checking that the solution matrix is positive definite")
+        δ = solver.min_eigenvalue
+        δ = max(δ, eps(eltype(sol.X)))
+
+        attempt = 0
+
+        while attempt < solver.max_pd_attempts
+            if isposdef(sol.X)
+                verbose && println("Solution matrix is positive definite")
+                break
+            end
+
+            λpre = eigmin(sol.X)
+
+            if solver.mask === nothing
+                project_psd!(sol.X, δ)
+                cov2cor!(sol.X)
+            else
+                # Strict PD and exact fixed-element feasibility cannot both be guaranteed: repairing
+                # definiteness perturbs every entry, so re-apply the mask afterwards. The fixed elements
+                # (and unit diagonal) take precedence.
+                project_psd!(sol.X, δ)
+                project_fixed!(sol.X, solver.A_orig, solver.mask)
+                project_unit!(sol.X)
+            end
+
+            λpost = eigmin(sol.X)
+            attempt += 1
+
+            verbose && println("Attempt=$attempt, δ=$δ, λ_min_pre=$λpre, λ_min_post=$λpost")
+
+            # if δ∈(0, 1), then repeatedly applying `√` causes δᵢ to converge to 1.
+            δ = sqrt(δ)
         end
     end
 

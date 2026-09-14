@@ -125,4 +125,5 @@ function nearest_cor(A, alg; kwargs...)
 
     return sol.X
 end
+
 nearest_cor(A; kwargs...) = nearest_cor(A, nothing; kwargs...)
