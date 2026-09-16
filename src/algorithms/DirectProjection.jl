@@ -11,7 +11,6 @@ struct DirectProjection{A, K} <: NCMAlgorithm
     tau::Real
     args::A
     kwargs::K
-
 end
 
 function DirectProjection(args...; tau::Real = 0, kwargs...)
