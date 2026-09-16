@@ -1,7 +1,8 @@
 module NearestCorrelationMatrix
 
 using LinearAlgebra
-using CommonSolve: CommonSolve, init, solve, solve!
+import CommonSolve
+using CommonSolve: init, solve, solve!
 
 include("internals/Internals.jl")
 using .Internals
@@ -34,8 +35,8 @@ export
     autotune,
     # common solve interface
     init,
-    solve,
     solve!,
+    solve, # just a re-export of the default implementation
     # simple interface
     nearest_cor,
     nearest_cor!,

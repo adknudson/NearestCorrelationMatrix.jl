@@ -4,28 +4,19 @@
 Defines the semi-definite programming problem of finding the nearest correlation matrix to a
 given input matrix.
 
-To define a `NCMProblem`, you only need to provide a square `AbstractMatrix` ``A``.
+To define a `NCMProblem`, you only need to provide a square matrix ``A``.
 Optionally, a mask of fixed element-pairs can be supplied. Only certain algorithms can make
 use of the mask.
 
-## Problem Type
-
-### Constructors
-
-```julia
-NCMProblem(A, mask=nothing, p=NullParameters(); kwargs...)
-```
-
-Parameters are optional, and if not given, then a `NullParameters()` singleton will be used,
-which will throw nice errors if you try to index non-existent parameters. Any extra keyword
-arguments are stored in the `kwargs` field and forwarded on to the solvers.
-
-### Fields
+## Arguments
 
 - `A`: The input matrix. Must be square. Should be symmetric.
 - `p`: The parameters for the problem. Defaults to `NullParameters`. Currently unused.
-- `mask`: A pattern
-- `kwargs`: The keyword arguments passed on to the solvers.
+
+## Keyword Arguments
+
+- `mask`: A BitMatrix or a matrix of 1s/0s indicating which elements must remain fixed.
+- `kwargs`: Additional keyword arguments passed on to the `init` function.
 """
 struct NCMProblem{T, M, P, K}
     A::T
@@ -36,6 +27,7 @@ struct NCMProblem{T, M, P, K}
         require_matrix(A)
         require_square(A)
         require_real(A)
+
         return new{typeof(A), typeof(mask), typeof(p), typeof(kwargs)}(A, mask, p, kwargs)
     end
 end
