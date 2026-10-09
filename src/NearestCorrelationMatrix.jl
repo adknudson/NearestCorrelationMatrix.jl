@@ -22,6 +22,7 @@ include("algorithms/Newton.jl")
 include("algorithms/DirectProjection.jl")
 include("algorithms/AlternatingProjections.jl")
 include("algorithms/AcceleratedAP.jl")
+include("algorithms/Rescaling.jl")
 include("algorithms/JuMPAlgorithm.jl")
 
 export
@@ -45,6 +46,7 @@ export
     AlternatingProjections,
     DirectProjection,
     JuMPAlgorithm,
-    Newton
+    Newton,
+    Rescaling
 
 end
