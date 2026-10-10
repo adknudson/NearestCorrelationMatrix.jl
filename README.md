@@ -2,9 +2,7 @@
 
 This is a light-weight pure-julia library for computing the nearest correlation matrix. A few algorithms are provided, including a quadratically convergent Newton algorithm.
 
-
 ## Usage
-
 
 ### CommonSolve.jl Interface
 
@@ -48,7 +46,6 @@ alg = autotune(Newton, prob)
 solver = init(prob, alg)
 ```
 
-
 ### Simplified Interface
 
 The `nearest_cor` and `nearest_cor!` methods are the "batteries included" methods for finding the nearest correlation matrix, and are designed to just work. They also have a final check to ensure that the solution is strictly positive-definite, as often that is required for other algorithms (e.g. Cholesky decomposition).
@@ -65,7 +62,6 @@ nearest_cor(r0, Newton) # uses Newton method with parameters tuned to the input 
 r = rand(10, 10)
 nearest_cor!(r) # computes NCM and overwrites r
 ```
-
 
 ### Solver Keyword Argumenets
 
@@ -99,7 +95,6 @@ nearest_cor!(r) # computes NCM and overwrites r
 - `abstol`: The absolute tolerance. Defaults to `√(eps(eltype(A)))`.
 - `reltol`: The relative tolerance. Defaults to `√(eps(eltype(A)))`.
 - `maxiters`: The number of iterations allowed. Defaults to `size(A,1)`
-
 
 ## Benchmarks
 
@@ -165,10 +160,11 @@ BLAS.get_config()
 
 The following algorithms are implemented:
 
-- `Newton`: An accurate and quadratically convergent algorithm
+- `Newton`: A quadratically convergent algorithm
 - `AlternatingProjections`: A simple linearly convergent algorithm
 - `AcceleratedAP`: Anderson accelerated version of `AlternatingProjections`
 - `DirectProjection`: A fast, one-step projection onto the set of correlation matrices
+- `EigenvalueShrinkage`: A fast, one-step heuristic that repairs an invalid correlation matrix by shrinking its eigenvalues towards the identity
 
 The default algorithm is the Newton method, which offers a great balance between accuracy and speed.
 
@@ -190,7 +186,6 @@ optimizer = optimizer_with_attributes(
 
 sol = solve(prob, JuMPAlgorithm(optimizer); fix_sym=true, uplo=:L)
 ```
-
 
 ## NCM Interface
 
@@ -240,7 +235,6 @@ supports_parameterless_construction(::MyAlgorithm) = false
 supports_mask(::Type{<:MyAlgorithm}) = false
 ```
 
-
 ## Common Gotchas
 
 Because a correlation matrix is defined as only positive semi-definite, it is possible for an algorithm to converge successfully but still not be useable for other methods such as a cholesky decomposition (common in probability models). Furthermore, the smallest eigenvalues may be negative on the order of machine precision (e.g. -2.2e-16) due to the inherent nature of floating point numbers. If a positive definite matrix is absolutely required, then pass the argument `ensure_pd=true` to the solver. This will replace the smallest eigenvalues with a small positive value and reconstruct the NCM:
@@ -252,8 +246,7 @@ X .= P * Diagonal(λ) * P'
 cov2cor!(X) # ensure that the transformed matrix is still a correlation matrix
 ```
 
-
 ## References
 
-* Qi, H., & Sun, D. (2006). A quadratically convergent Newton method for computing the nearest correlation matrix. SIAM journal on matrix analysis and applications, 28(2), 360-385.
-* https://nhigham.com/2013/02/13/the-nearest-correlation-matrix/
+- Qi, H., & Sun, D. (2006). A quadratically convergent Newton method for computing the nearest correlation matrix. SIAM journal on matrix analysis and applications, 28(2), 360-385.
+- <https://nhigham.com/2013/02/13/the-nearest-correlation-matrix/>
