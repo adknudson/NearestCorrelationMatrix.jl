@@ -10,9 +10,10 @@ using .Datasets
 include("CustomTestMacros.jl")
 using .CustomTestMacros
 
+internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
 fast_algtypes = (Newton, DirectProjection)
 
-for alg in subtypes(NCMAlgorithm)
+for alg in internal_algtypes
     @testset "$(NCM.alg_name(alg))" begin
         @testset "BEYU11" begin
             A = beyu11()

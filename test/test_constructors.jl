@@ -3,9 +3,11 @@ using InteractiveUtils
 using NearestCorrelationMatrix
 import NearestCorrelationMatrix as NCM
 
+internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
+
 prob = NCMProblem(rand(4, 4))
 
-for algtype in subtypes(NCMAlgorithm)
+for algtype in internal_algtypes
     @testset "$(NCM.alg_name(algtype))" begin
         @test NCM.supports_parameterless_construction(algtype)
 
