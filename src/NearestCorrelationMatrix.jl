@@ -23,7 +23,6 @@ include("algorithms/DirectProjection.jl")
 include("algorithms/AlternatingProjections.jl")
 include("algorithms/AcceleratedAP.jl")
 include("algorithms/EigenvalueShrinkage.jl")
-include("algorithms/JuMPAlgorithm.jl")
 
 export
     # domain types
@@ -45,7 +44,6 @@ export
     AcceleratedAP,
     AlternatingProjections,
     DirectProjection,
-    JuMPAlgorithm,
     Newton,
     EigenvalueShrinkage
 

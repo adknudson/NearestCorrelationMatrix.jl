@@ -8,8 +8,6 @@ import NearestCorrelationMatrix as NCM
 include("CustomTestMacros.jl")
 using .CustomTestMacros
 
-internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
-
 function test_simple(algtype)
     return @testset "$(NCM.alg_name(algtype))" begin
         A = default_negdef()
@@ -42,6 +40,6 @@ function test_simple(algtype)
     end
 end
 
-for algtype in internal_algtypes
+for algtype in subtypes(NCMAlgorithm)
     test_simple(algtype)
 end

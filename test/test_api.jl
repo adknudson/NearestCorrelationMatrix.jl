@@ -7,8 +7,6 @@ using NearestCorrelationMatrix.Internals: default_negdef
 include("CustomTestMacros.jl")
 using .CustomTestMacros
 
-internal_algtypes = setdiff(subtypes(NCMAlgorithm), (JuMPAlgorithm,))
-
 A = default_negdef()
 
 # variants of NCMProblem
@@ -24,13 +22,13 @@ prob = NCMProblem(A)
 @test init(prob) isa NCMSolver
 
 # init with an algtype must return the correct algtype
-for algtype in internal_algtypes
+for algtype in subtypes(NCMAlgorithm)
     solver = init(prob, algtype)
     @test solver.alg isa algtype
 end
 
 # solve with an algtype must return the correct algtype (#31)
-for algtype in internal_algtypes
+for algtype in subtypes(NCMAlgorithm)
     sol = solve(prob, algtype)
     @test sol.alg isa algtype
 end
